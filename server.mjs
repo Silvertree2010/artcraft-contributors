@@ -44,6 +44,20 @@ async function repos() {
   rt = Date.now(); dirty = 1;
 }
 
+const QM = 'alert_status,code_smells,bugs,vulnerabilities,ncloc,coverage,duplicated_lines_density';
+let qt = 0;
+async function sq() {
+  const sf = async (u) => { const r = await fetch('https://sonarcloud.io/api' + u, { signal: AbortSignal.timeout(25000) }); if (!r.ok) throw new Error('sonar ' + r.status); return r.json(); };
+  const pj = (await sf(`/components/search_projects?organization=${O}&ps=500`)).components || [];
+  const km = Object.fromEntries(pj.map((c) => [c.key, c.name]));
+  const q = {};
+  for (let i = 0; i < pj.length; i += 50) {
+    const j = await sf(`/measures/search?projectKeys=${pj.slice(i, i + 50).map((c) => c.key).join(',')}&metricKeys=${QM}`);
+    for (const m of j.measures || []) (q[km[m.component]] ||= { k: m.component })[m.metric] = m.metric === 'alert_status' ? m.value : +m.value;
+  }
+  db.q = q; qt = Date.now(); dirty = 1;
+}
+
 const PQ = `query($o:String!,$r:String!,$a:String){repository(owner:$o,name:$r){pullRequests(first:100,after:$a,orderBy:{field:UPDATED_AT,direction:DESC}){pageInfo{hasNextPage endCursor}nodes{number title createdAt mergedAt closedAt updatedAt author{__typename login ...on User{databaseId}}}}}}`;
 async function gql(q, v) {
   const r = await fetch('https://api.github.com/graphql', { method: 'POST', headers: { ...hd, 'Content-Type': 'application/json' }, body: JSON.stringify({ query: q, variables: v }), signal: AbortSignal.timeout(30000) });
@@ -184,6 +198,18 @@ function build() {
       }
     }
   }
+  const tl = (t) => t.replace(/\s*\(#\d+\)\s*$/, '').trim().toLowerCase();
+  for (const rn of rs) {
+    const pr = db.p[rn]; if (!pr) continue;
+    const bt = new Map();
+    for (const v of Object.values(pr)) if (v[2]) bt.set(tl(v[4]), v[0]);
+    for (const v of Object.values(pr)) {
+      const mt = v[2] && /^revert\s+"(.+)"\s*(\(#\d+\))?$/i.exec(v[4]);
+      if (!mt) continue;
+      const ol = bt.get(tl(mt[1]));
+      if (ol && ppl.has(ol)) ppl.get(ol).rv = (ppl.get(ol).rv || 0) + 1;
+    }
+  }
   let pre = 0;
   for (const p of ppl.values()) {
     const fi = Math.floor(p.f / 86400) - d0;
@@ -199,14 +225,14 @@ function build() {
     const ca = Object.entries(p.cr).sort((a, b) => b[1] - a[1]);
     CX.set(p.l.toLowerCase(), ca);
     const ar = new Set([...Object.keys(p.r), ...Object.keys(p.cr)]);
-    return [p.l, p.i, p.m, p.o, p.op, p.m7, p.m30, ar.size, tr[0] ? tr[0][0] : ca[0] ? ca[0][0] : '', p.f, p.ls, med(p.t), p.cm, p.b];
+    return [p.l, p.i, p.m, p.o, p.op, p.m7, p.m30, ar.size, tr[0] ? tr[0][0] : ca[0] ? ca[0][0] : '', p.f, p.ls, med(p.t), p.cm, p.b, p.m + (p.o - p.op - p.m) >= 5 ? Math.round(p.m / (p.o - p.op) * 1000) / 1000 : null, p.rv || 0];
   }).sort((a, b) => b[2] - a[2] || b[12] - a[12] || b[3] - a[3]);
   all.sort((a, b) => b[0] - a[0]);
   const n30 = [...ppl.values()].filter((p) => now - p.f < 30 * 86400).length;
   S = {
     at: Math.round(now), sync: !db.r.length ? 1 : db.r.filter((r) => !db.a[r.n] || !db.a[r.n].cur || !db.ca[r.n] || !db.ca[r.n].cur).length, err,
     k: { c: ppl.size, m: tm, o: op, cm: tc, m1, m7, t: med(t30), n30, pr: all.length && rp.reduce((s, r) => s + r.o, 0) },
-    rs: rp.map((r) => ({ n: r.n, m: r.m, o: r.o, op: r.op, c: r.c.size, t: med(r.t), cm: r.cm, b: r.b, s: (db.r.find((x) => x.n === r.n) || {}).s || 0 })),
+    rs: rp.map((r) => ({ n: r.n, m: r.m, o: r.o, op: r.op, c: r.c.size, t: med(r.t), cm: r.cm, b: r.b, q: (db.q || {})[r.n] || null, s: (db.r.find((x) => x.n === r.n) || {}).s || 0 })),
     pre, days: days.map((d) => [d.d, d.o, d.x, d.m, d.a.size, d.n]), weeks, heat, hist, lead, recent: all.slice(0, 40),
   };
   Sz = zlib.gzipSync(JSON.stringify(S));
@@ -225,6 +251,7 @@ async function tick() {
     if (!db.r.length || Date.now() - rt > H) await repos();
     await sync();
     await csync();
+    if (Date.now() - qt > H) await sq().catch((e) => console.error('[sonar]', e.message));
     err = null;
   } catch (e) { err = e.message; console.error('[sync]', e.message); }
   if (dirty) { wj('db.json', db); dirty = 0; }

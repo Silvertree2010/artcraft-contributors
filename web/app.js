@@ -149,8 +149,19 @@ function apps() {
   const r = S.rs.filter((x) => x.o || x.cm).sort((a, b) => b.cm - a.cm || b.m - a.m), mx = Math.max(1, ...r.map((x) => x.cm));
   return `<div class="tw"><table><thead><tr><th>App</th><th class="n">Commits</th><th class="n hide-s">Merged</th><th class="hide-s">Built by</th><th style="width:18%" class="hide-s"></th></tr></thead><tbody>${r.map((x) => `<tr>
     <td><a class="app" href="https://github.com/storytold/${esc(x.n)}" target="_blank" rel="noopener" style="color:${ink(x.n)}"><img src="${ico(x.n)}" alt="">${esc(ap(x.n)[0])}</a></td>
-    <td class="n">${N(x.cm)}</td><td class="n hide-s dim">${N(x.m)}</td><td class="hide-s">${x.b ? `<a class="dim" href="#/u/${encodeURIComponent(x.b)}">${esc(x.b)}</a>` : '<span class="dim">–</span>'}</td>
+    <td class="n">${N(x.cm)}</td><td class="n hide-s dim">${N(x.m)}</td><td class="hide-s" style="white-space:nowrap">${x.b ? `<a class="dim" href="#/u/${encodeURIComponent(x.b)}">${esc(x.b)}</a>` : '<span class="dim">–</span>'}</td>
     <td class="hide-s"><div class="bar"><i style="width:${x.cm / mx * 100}%;background:${col(x.n)}"></i></div></td></tr>`).join('')}</tbody></table></div>`;
+}
+const pc0 = (x) => x == null ? '–' : Math.round(x * 100) + '%';
+const QG = { OK: ['g', 'Passed'], ERROR: ['b', 'Failed'], WARN: ['w', 'Warning'] };
+function qual() {
+  const r = S.rs.filter((x) => x.q && x.q.ncloc).sort((a, b) => b.q.ncloc - a.q.ncloc);
+  if (!r.length) return '';
+  const k = (x, f, d = 0) => x == null ? '–' : f ? x.toFixed(d) + f : N(x);
+  return `<section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Code quality</h2><span class="sub">SonarCloud, main branch</span></div><div class="tw"><table><thead><tr><th>App</th><th>Quality gate</th><th class="n">Code smells</th><th class="n">Per 1k lines</th><th class="n hide-s">Bugs</th><th class="n hide-s">Vulnerabilities</th><th class="n hide-s">Coverage</th><th class="n hide-s">Duplication</th><th class="n hide-s">Lines</th></tr></thead><tbody>${r.map((x) => { const q = x.q, g = QG[q.alert_status] || ['n', '–']; return `<tr>
+    <td><a class="app" href="https://sonarcloud.io/project/overview?id=${esc(q.k)}" target="_blank" rel="noopener" style="color:${ink(x.n)}"><img src="${ico(x.n)}" alt="">${esc(ap(x.n)[0])}</a></td>
+    <td><span class="st ${g[0]}">${g[1]}</span></td><td class="n">${k(q.code_smells)}</td><td class="n">${q.code_smells != null ? (q.code_smells / q.ncloc * 1000).toFixed(1) : '–'}</td>
+    <td class="n hide-s dim">${k(q.bugs)}</td><td class="n hide-s dim">${k(q.vulnerabilities)}</td><td class="n hide-s dim">${k(q.coverage, '%', 1)}</td><td class="n hide-s dim">${k(q.duplicated_lines_density, '%', 1)}</td><td class="n hide-s dim">${k(q.ncloc)}</td></tr>`; }).join('')}</tbody></table></div></section>`;
 }
 const blt = (b) => !b || !b.length ? '<span class="dim">–</span>' : b.slice(0, 2).map((n) => `<span style="color:${ink(n)}">${esc(ap(n)[0])}</span>`).join(', ') + (b.length > 2 ? ` <span class="dim">+${b.length - 2}</span>` : '');
 
@@ -158,17 +169,17 @@ const PI = { all: 2, '30d': 6, '7d': 5 };
 function lead(full) {
   const pc = PI[per];
   let r = S.lead.filter((x) => x[pc] > 0 || per === 'all');
-  if (srt) r = r.slice().sort((a, b) => srt[1] * ((a[srt[0]] ?? Infinity) - (b[srt[0]] ?? Infinity)));
+  if (srt) r = r.slice().sort((a, b) => (a[srt[0]] == null) - (b[srt[0]] == null) || srt[1] * (a[srt[0]] - b[srt[0]]));
   else r = r.slice().sort((a, b) => b[pc] - a[pc] || b[3] - a[3]);
   const rk = new Map(r.map((x, i) => [x[0], i + 1]));
   if (q) r = r.filter((x) => x[0].toLowerCase().includes(q));
   const lm = full ? lim : 15, sh = r.slice(0, lm);
   const th = (i, t, c = 'n') => `<th class="s ${c} ${srt && srt[0] === i ? 'on' : ''}" data-s="${i}">${t}</th>`;
   const me = ME && ME.l.toLowerCase();
-  return `<div class="tw"><table><thead><tr><th class="n">#</th><th>Contributor</th>${th(pc, 'Merged')}${th(12, 'Commits', 'n hide-s')}${th(3, 'Opened', 'n hide-s')}${th(7, 'Apps', 'n hide-s')}<th class="hide-s">Mostly</th><th class="hide-s">Built</th>${th(11, 'Median merge', 'n hide-s')}${th(10, 'Last active', 'n hide-s')}</tr></thead><tbody>
+  return `<div class="tw"><table><thead><tr><th class="n">#</th><th>Contributor</th>${th(pc, 'Merged')}${th(12, 'Commits', 'n hide-s')}${th(14, 'Merge rate', 'n hide-s')}${th(15, 'Reverted', 'n hide-s')}${th(7, 'Apps', 'n hide-s')}<th class="hide-s">Mostly</th><th class="hide-s">Built</th>${th(11, 'Median merge', 'n hide-s')}${th(10, 'Last active', 'n hide-s')}</tr></thead><tbody>
     ${sh.map((x) => `<tr class="lk ${me === x[0].toLowerCase() ? 'me-row' : ''}" data-u="${esc(x[0])}"><td class="n dim">${rk.get(x[0])}</td>
     <td><span class="who"><img loading="lazy" src="${av(x[0], x[1])}" alt="">${esc(x[0])}</span></td>
-    <td class="n">${N(x[pc])}</td><td class="n hide-s dim">${N(x[12])}</td><td class="n hide-s dim">${N(x[3])}</td><td class="n hide-s dim">${x[7]}</td>
+    <td class="n">${N(x[pc])}</td><td class="n hide-s dim">${N(x[12])}</td><td class="n hide-s dim">${pc0(x[14])}</td><td class="n hide-s dim">${N(x[15])}</td><td class="n hide-s dim">${x[7]}</td>
     <td class="hide-s" style="color:${x[8] ? ink(x[8]) : ''}">${x[8] ? esc(ap(x[8])[0]) : '–'}</td><td class="hide-s">${blt(x[13])}</td><td class="n hide-s dim">${du(x[11])}</td><td class="n hide-s dim">${ago(x[10])}</td></tr>`).join('')}
     </tbody></table></div>${!sh.length ? '<p class="empty">No one matches.</p>' : ''}
     ${full && r.length > lm ? `<button class="btn more" id="more">Show more (${N(r.length - lm)} left)</button>` : ''}
@@ -202,6 +213,7 @@ function overview() {
   </div>
   <section class="box" style="margin-bottom:24px"><div class="box-h"><h2>When PRs get merged</h2><span class="sub">Your local time</span></div>${heat()}</section>
   <section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Leaderboard</h2>${segs()}</div><div id="lead">${lead(false)}</div></section>
+  ${qual()}
   <div class="grid g2">
     <section class="box"><div class="box-h"><h2>Apps</h2></div>${apps()}</section>
     <section class="box"><div class="box-h"><h2>Latest merges</h2></div>${feed()}</section>
@@ -247,9 +259,9 @@ function prof(d, l, mine) {
   return `<div class="kpi">
     <div><span class="lbl">Rank</span><b>${d.rank} <span class="sub" style="font:400 14px Inter">of ${N(d.of)}</span></b></div>
     <div><span class="lbl">Merged</span><b>${N(r[2])}</b></div>
-    <div><span class="lbl">Opened</span><b>${N(r[3])}</b></div>
     <div><span class="lbl">Commits</span><b>${N(r[12])}</b></div>
-    <div><span class="lbl">Merged, 30 days</span><b>${N(r[6])}</b></div>
+    <div><span class="lbl">Merge rate</span><b>${pc0(r[14])}</b></div>
+    <div><span class="lbl">Reverted</span><b>${N(r[15])}</b></div>
     <div><span class="lbl">Median merge</span><b>${du(r[11])}</b></div>
   </div>
   ${r[13] && r[13].length ? `<section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Built</h2><span class="sub">Top committer</span></div><div class="leg" style="margin:0">${r[13].map((n) => `<a class="app" style="color:${ink(n)};border:1px solid var(--line);padding:6px 10px" href="https://github.com/storytold/${esc(n)}" target="_blank" rel="noopener"><img src="${ico(n)}" alt="">${esc(ap(n)[0])}</a>`).join('')}</div></section>` : ''}
