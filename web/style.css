@@ -17,7 +17,8 @@
 
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
-body { margin: 0; background: var(--bg); color: var(--ink); font: 400 14px/1.5 Inter, sans-serif; font-feature-settings: "tnum" 1; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 14px/1.5 Inter, sans-serif; }
+.n, .kpi b, .feed .m { font-variant-numeric: tabular-nums; }
 a { color: var(--accent-ink); text-decoration: none; }
 a:hover { text-decoration: underline; }
 button, input, select { font: inherit; color: inherit; }

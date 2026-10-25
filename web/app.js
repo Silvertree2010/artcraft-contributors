@@ -63,7 +63,7 @@ function ax(mx) {
 
 function vi() {
   const t = S.days.map((d) => d[3].reduce((a, b) => a + b, 0));
-  const f = t.findIndex((x) => x >= 3);
+  const mx = Math.max(...t), f = t.findIndex((x) => x >= Math.max(3, mx * .05));
   return Math.max(0, Math.min(f < 0 ? 0 : f - 2, S.days.length - 21));
 }
 function daily() {
@@ -91,7 +91,7 @@ function daily() {
 }
 
 function legend() {
-  return `<div class="leg">${S.rs.slice().sort((a, b) => ORD.indexOf(a.n) - ORD.indexOf(b.n)).map((r) => `<button data-a="${esc(r.n)}" class="${hid.has(r.n) ? 'off' : ''}"><i style="background:${col(r.n)}"></i>${esc(ap(r.n)[0])}</button>`).join('')}</div>`;
+  return `<div class="leg">${S.rs.filter((x) => x.o).sort((a, b) => ORD.indexOf(a.n) - ORD.indexOf(b.n)).map((r) => `<button data-a="${esc(r.n)}" class="${hid.has(r.n) ? 'off' : ''}"><i style="background:${col(r.n)}"></i>${esc(ap(r.n)[0])}</button>`).join('')}</div>`;
 }
 
 function growth() {
@@ -146,7 +146,7 @@ function heat() {
 }
 
 function apps() {
-  const r = S.rs.slice().sort((a, b) => b.m - a.m), mx = Math.max(1, ...r.map((x) => x.m));
+  const r = S.rs.filter((x) => x.o).sort((a, b) => b.m - a.m), mx = Math.max(1, ...r.map((x) => x.m));
   return `<div class="tw"><table><thead><tr><th>App</th><th class="n">Merged</th><th class="n hide-s">Open</th><th class="n hide-s">People</th><th class="n hide-s">Median merge</th><th style="width:22%" class="hide-s"></th></tr></thead><tbody>${r.map((x) => `<tr>
     <td><a class="app" href="https://github.com/storytold/${esc(x.n)}" target="_blank" rel="noopener" style="color:${ink(x.n)}"><img src="${ico(x.n)}" alt="">${esc(ap(x.n)[0])}</a></td>
     <td class="n">${N(x.m)}</td><td class="n hide-s dim">${N(x.op)}</td><td class="n hide-s dim">${N(x.c)}</td><td class="n hide-s dim">${du(x.t)}</td>
@@ -213,20 +213,21 @@ function people() {
 }
 
 function weekly(prs) {
-  const now = Date.now() / 1000, n = 26, w0 = Math.floor(now / 604800) - n + 1, b = new Array(n).fill(0), o = new Array(n).fill(0);
+  const now = Math.floor(Date.now() / 86400000), f = Math.min(...prs.map((p) => Math.floor(p[2] / 86400)));
+  const n = Math.min(90, Math.max(14, now - f + 2)), d0 = now - n + 1, b = new Array(n).fill(0), o = new Array(n).fill(0);
   for (const p of prs) {
-    const ci = Math.floor(p[2] / 604800) - w0; if (ci >= 0 && ci < n) o[ci]++;
-    if (p[3]) { const mi = Math.floor(p[3] / 604800) - w0; if (mi >= 0 && mi < n) b[mi]++; }
+    const ci = Math.floor(p[2] / 86400) - d0; if (ci >= 0 && ci < n) o[ci]++;
+    if (p[3]) { const mi = Math.floor(p[3] / 86400) - d0; if (mi >= 0 && mi < n) b[mi]++; }
   }
-  const W = 900, H = 170, L = 30, B = 22, T = 6, bw = (W - L) / n, { top, t } = ax(Math.max(1, ...b, ...o));
+  const W = 900, H = 170, L = 30, B = 22, T = 6, bw = (W - L) / n, st = Math.max(1, Math.round(n / 7)), { top, t } = ax(Math.max(1, ...b, ...o));
   const y = (x) => T + (H - T - B) * (1 - x / top);
   let g = t.map((x) => `<line class="gl" x1="${L}" x2="${W}" y1="${y(x)}" y2="${y(x)}"/><text x="${L - 6}" y="${y(x) + 3}" text-anchor="end">${x}</text>`).join('');
   for (let i = 0; i < n; i++) {
-    const x = L + i * bw, hw = (bw - 4) / 2;
-    g += `<rect x="${x + 2}" y="${y(o[i])}" width="${hw}" height="${(H - T - B) * o[i] / top}" fill="var(--line2)"/>`;
-    g += `<rect x="${x + 2 + hw}" y="${y(b[i])}" width="${hw}" height="${(H - T - B) * b[i] / top}" fill="var(--accent)"/>`;
-    g += `<rect class="hv" x="${x}" y="${T}" width="${bw}" height="${H - T - B}" data-t="${esc(`<b>Week of ${dt((w0 + i) * 604800, 1)}</b><br>${o[i]} opened, ${b[i]} merged`)}"/>`;
-    if (i % 4 === 0) g += `<text x="${x}" y="${H - 6}">${dt((w0 + i) * 604800)}</text>`;
+    const x = L + i * bw, hw = (bw - 2) / 2;
+    g += `<rect x="${x + 1}" y="${y(o[i])}" width="${hw}" height="${(H - T - B) * o[i] / top}" fill="var(--line2)"/>`;
+    g += `<rect x="${x + 1 + hw}" y="${y(b[i])}" width="${hw}" height="${(H - T - B) * b[i] / top}" fill="var(--accent)"/>`;
+    g += `<rect class="hv" x="${x}" y="${T}" width="${bw}" height="${H - T - B}" data-t="${esc(`<b>${dt((d0 + i) * 86400, 1)}</b><br>${o[i]} opened<br>${b[i]} merged`)}"/>`;
+    if (i % st === 0) g += `<text x="${x}" y="${H - 6}">${dt((d0 + i) * 86400)}</text>`;
   }
   return `<svg class="ch" viewBox="0 0 ${W} ${H}">${g}</svg>`;
 }
@@ -240,7 +241,7 @@ function prof(d, l, mine) {
   const r = d.row, by = {};
   for (const p of d.prs) if (p[3]) by[p[0]] = (by[p[0]] || 0) + 1;
   const ab = Object.entries(by).sort((a, b) => b[1] - a[1]), mx = Math.max(1, ...ab.map((x) => x[1]));
-  const lp = mine ? 300 : 60;
+  const lp = mine ? 100 : 30;
   return `<div class="kpi">
     <div><span class="lbl">Rank</span><b>${d.rank} <span class="sub" style="font:400 14px Inter">of ${N(d.of)}</span></b></div>
     <div><span class="lbl">Merged</span><b>${N(r[2])}</b></div>
@@ -249,7 +250,7 @@ function prof(d, l, mine) {
     <div><span class="lbl">Merged, 30 days</span><b>${N(r[6])}</b></div>
     <div><span class="lbl">Median merge</span><b>${du(r[11])}</b></div>
   </div>
-  <section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Per week</h2><span class="sub">Last 26 weeks, <span style="color:var(--accent-ink)">merged</span> and opened</span></div>${weekly(d.prs)}</section>
+  <section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Per day</h2><span class="sub"><span style="color:var(--accent-ink)">Merged</span> and opened</span></div>${weekly(d.prs)}</section>
   <div class="grid g32">
     <section class="box"><div class="box-h"><h2>Pull requests</h2><span class="sub">${N(d.prs.length)}</span></div><ul class="feed">${d.prs.slice(0, lp).map((p) => `<li><img src="${ico(p[0])}" alt="${esc(ap(p[0])[0])}" title="${esc(ap(p[0])[0])}"><span class="t"><a href="https://github.com/storytold/${esc(p[0])}/pull/${p[1]}" target="_blank" rel="noopener">${esc(p[5])}</a><br><span class="m">${esc(ap(p[0])[0])} #${p[1]}, ${dt(p[2], 1)}${p[3] ? `, merged in ${du(p[3] - p[2])}` : ''}</span></span>${stat(p)}</li>`).join('')}</ul>${d.prs.length > lp ? `<a class="btn more" target="_blank" rel="noopener" href="https://github.com/pulls?q=${encodeURIComponent(`is:pr author:${l} org:storytold`)}">All on GitHub</a>` : ''}</section>
     <section class="box"><div class="box-h"><h2>Apps</h2></div><table><tbody>${ab.map(([n, c]) => `<tr><td><span class="app" style="color:${ink(n)}"><img src="${ico(n)}" alt="">${esc(ap(n)[0])}</span></td><td class="n">${c}</td><td style="width:45%"><div class="bar"><i style="width:${c / mx * 100}%;background:${col(n)}"></i></div></td></tr>`).join('') || '<tr><td class="dim">Nothing merged yet</td></tr>'}</tbody></table></section>
