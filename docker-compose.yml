@@ -1,0 +1,15 @@
+services:
+  artcraft:
+    build: .
+    container_name: apollo_artcraft
+    restart: unless-stopped
+    volumes:
+      - ./data:/data
+      - ./secrets:/run/secrets:ro
+    networks: [startpage_default]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/healthz"]
+      interval: 60s
+networks:
+  startpage_default:
+    external: true
