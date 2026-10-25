@@ -32,11 +32,11 @@ async function gh(u, h = hd) {
   return r.json();
 }
 
-const db = rj('db.json', { a: {}, p: {}, u: {}, r: [] });
-db.a ||= {}; db.p ||= {}; db.u ||= {}; db.r ||= [];
+const db = rj('db.json', { a: {}, p: {}, u: {}, r: [], ca: {}, c: {} });
+db.a ||= {}; db.p ||= {}; db.u ||= {}; db.r ||= []; db.ca ||= {}; db.c ||= {};
 let dirty = 0, rt = 0, err = null;
 const sec = (t) => (t ? Math.round(Date.parse(t) / 1000) : 0);
-const okr = (r) => !r.archived && !/^placeholder-/i.test(r.name) && (/craft$/i.test(r.name) || r.name === 'craft-launcher');
+const okr = (r) => !r.archived && !/^placeholder-/i.test(r.name) && /craft/i.test(r.name);
 
 async function repos() {
   const j = await gh(`/orgs/${O}/repos?per_page=100&type=public`);
@@ -51,6 +51,39 @@ async function gql(q, v) {
   const j = await r.json();
   if (!j.data) throw new Error('graphql ' + (j.errors && j.errors[0] && j.errors[0].message));
   return j.data;
+}
+
+const CQ = `query($o:String!,$r:String!,$a:String,$s:GitTimestamp){repository(owner:$o,name:$r){defaultBranchRef{target{...on Commit{history(first:100,after:$a,since:$s){pageInfo{hasNextPage endCursor}nodes{oid committedDate author{user{login databaseId}}}}}}}}}`;
+async function csync() {
+  let n = 0;
+  for (const { n: rn } of db.r) {
+    const s = (db.ca[rn] ||= { cur: null, start: null, aft: null, full: 0, si: null });
+    if (!s.start) {
+      if (s.cur && Date.now() - Date.parse(s.cur) < 10 * 60e3) continue;
+      const fu = Date.now() - s.full > DY;
+      s.start = new Date().toISOString(); s.aft = null;
+      s.si = fu || !s.cur ? null : new Date(Date.parse(s.cur) - 3 * DY).toISOString();
+      if (fu) s.full = Date.now();
+    }
+    while (s.start && n < 60) {
+      const j = await gql(CQ, { o: O, r: rn, a: s.aft, s: s.si });
+      n++;
+      const h = j.repository && j.repository.defaultBranchRef && j.repository.defaultBranchRef.target && j.repository.defaultBranchRef.target.history;
+      const cc = (db.c[rn] ||= {});
+      for (const c of (h ? h.nodes : [])) {
+        const us = c.author && c.author.user;
+        if (!us) continue;
+        if (us.databaseId) db.u[us.login] = us.databaseId;
+        cc[c.oid.slice(0, 10)] = [us.login, sec(c.committedDate)];
+      }
+      dirty = 1;
+      if (!h || !h.pageInfo.hasNextPage) { s.cur = s.start; s.start = null; s.aft = null; }
+      else s.aft = h.pageInfo.endCursor;
+      await sl(300);
+    }
+    if (dirty) { wj('db.json', db); dirty = 0; build(); }
+    if (n >= 60) break;
+  }
 }
 
 async function sync() {
@@ -87,25 +120,41 @@ const med = (a) => { if (!a.length) return null; const s = [...a].sort((x, y) =>
 const TB = [3600, 3 * 3600, 6 * 3600, 12 * 3600, 86400, 2 * 86400, 4 * 86400, 7 * 86400, Infinity];
 const wk = (t) => Math.floor((t / 86400 + 3) / 7);
 
-let S = null, Sz = null, U = new Map();
+let S = null, Sz = null, U = new Map(), C = new Map();
 
 function build() {
   const now = Date.now() / 1000;
-  const rs = db.r.map((r) => r.n).filter((n) => db.p[n]);
+  const rs = db.r.map((r) => r.n).filter((n) => db.p[n] || db.c[n]);
   const ri = Object.fromEntries(rs.map((n, i) => [n, i]));
   const ND = 90, d0 = Math.floor(now / 86400) - ND + 1;
   const days = Array.from({ length: ND }, (_, i) => ({ d: (d0 + i) * 86400, o: 0, x: 0, m: new Array(rs.length).fill(0), a: new Set(), n: 0 }));
   const heat = Array.from({ length: 7 }, () => new Array(24).fill(0));
   const hist = new Array(TB.length).fill(0);
-  const ppl = new Map(), wks = new Map(), rp = rs.map((n) => ({ n, m: 0, o: 0, op: 0, c: new Set(), t: [] }));
+  const ppl = new Map(), wks = new Map(), rp = rs.map((n) => ({ n, m: 0, o: 0, op: 0, c: new Set(), t: [], cm: 0, b: null }));
   const all = [];
   let tm = 0, op = 0, m1 = 0, m7 = 0, t30 = [];
+  const np = (l, c) => { let p = ppl.get(l); if (!p) { p = { l, i: db.u[l] || 0, m: 0, o: 0, op: 0, m7: 0, m30: 0, r: {}, f: c, ls: c, t: [], cm: 0, cr: {}, b: [] }; ppl.set(l, p); } return p; };
+  const CX = new Map();
+  let tc = 0;
+  for (const rn of rs) {
+    const R = rp[ri[rn]], by = {};
+    for (const [l, t] of Object.values(db.c[rn] || {})) {
+      if (bot(l)) continue;
+      const p = np(l, t);
+      p.cm++; R.cm++; tc++;
+      p.cr[rn] = (p.cr[rn] || 0) + 1;
+      if (t < p.f) p.f = t;
+      if (t > p.ls) p.ls = t;
+      by[l] = (by[l] || 0) + 1;
+    }
+    const tp = Object.entries(by).sort((a, b) => b[1] - a[1])[0];
+    if (tp && R.cm >= 10 && tp[1] >= R.cm * .3) { R.b = tp[0]; ppl.get(tp[0]).b.push(rn); }
+  }
   for (const rn of rs) {
     const R = rp[ri[rn]];
-    for (const [nr, [l, c, m, x, ti]] of Object.entries(db.p[rn])) {
+    for (const [nr, [l, c, m, x, ti]] of Object.entries(db.p[rn] || {})) {
       if (bot(l)) continue;
-      const p = ppl.get(l) || { l, i: db.u[l] || 0, m: 0, o: 0, op: 0, m7: 0, m30: 0, r: {}, f: c, ls: c, t: [] };
-      ppl.set(l, p);
+      const p = np(l, c);
       p.o++; R.o++; R.c.add(l);
       if (c < p.f) p.f = c;
       if (c > p.ls) p.ls = c;
@@ -147,31 +196,35 @@ function build() {
   const weeks = wl.map((w) => { cum += w.n; return [w.w * 7 * 86400 - 3 * 86400, w.m, w.a.size, w.n, cum]; });
   const lead = [...ppl.values()].map((p) => {
     const tr = Object.entries(p.r).sort((a, b) => b[1] - a[1]);
-    return [p.l, p.i, p.m, p.o, p.op, p.m7, p.m30, tr.length, tr[0] ? tr[0][0] : '', p.f, p.ls, med(p.t)];
-  }).sort((a, b) => b[2] - a[2] || b[3] - a[3]);
+    const ca = Object.entries(p.cr).sort((a, b) => b[1] - a[1]);
+    CX.set(p.l.toLowerCase(), ca);
+    const ar = new Set([...Object.keys(p.r), ...Object.keys(p.cr)]);
+    return [p.l, p.i, p.m, p.o, p.op, p.m7, p.m30, ar.size, tr[0] ? tr[0][0] : ca[0] ? ca[0][0] : '', p.f, p.ls, med(p.t), p.cm, p.b];
+  }).sort((a, b) => b[2] - a[2] || b[12] - a[12] || b[3] - a[3]);
   all.sort((a, b) => b[0] - a[0]);
   const n30 = [...ppl.values()].filter((p) => now - p.f < 30 * 86400).length;
   S = {
-    at: Math.round(now), sync: !db.r.length ? 1 : db.r.filter((r) => !db.a[r.n] || !db.a[r.n].cur).length, err,
-    k: { c: ppl.size, m: tm, o: op, m1, m7, t: med(t30), n30, pr: all.length && rp.reduce((s, r) => s + r.o, 0) },
-    rs: rp.map((r) => ({ n: r.n, m: r.m, o: r.o, op: r.op, c: r.c.size, t: med(r.t), s: (db.r.find((x) => x.n === r.n) || {}).s || 0 })),
+    at: Math.round(now), sync: !db.r.length ? 1 : db.r.filter((r) => !db.a[r.n] || !db.a[r.n].cur || !db.ca[r.n] || !db.ca[r.n].cur).length, err,
+    k: { c: ppl.size, m: tm, o: op, cm: tc, m1, m7, t: med(t30), n30, pr: all.length && rp.reduce((s, r) => s + r.o, 0) },
+    rs: rp.map((r) => ({ n: r.n, m: r.m, o: r.o, op: r.op, c: r.c.size, t: med(r.t), cm: r.cm, b: r.b, s: (db.r.find((x) => x.n === r.n) || {}).s || 0 })),
     pre, days: days.map((d) => [d.d, d.o, d.x, d.m, d.a.size, d.n]), weeks, heat, hist, lead, recent: all.slice(0, 40),
   };
   Sz = zlib.gzipSync(JSON.stringify(S));
   const idx = new Map();
-  for (const rn of rs) for (const [nr, v] of Object.entries(db.p[rn])) {
+  for (const rn of rs) for (const [nr, v] of Object.entries(db.p[rn] || {})) {
     if (bot(v[0])) continue;
     const k = v[0].toLowerCase();
     if (!idx.has(k)) idx.set(k, []);
     idx.get(k).push([rn, +nr, v[1], v[2], v[3], v[4]]);
   }
-  U = idx;
+  U = idx; C = CX;
 }
 
 async function tick() {
   try {
     if (!db.r.length || Date.now() - rt > H) await repos();
     await sync();
+    await csync();
     err = null;
   } catch (e) { err = e.message; console.error('[sync]', e.message); }
   if (dirty) { wj('db.json', db); dirty = 0; }
@@ -241,10 +294,10 @@ http.createServer(async (q, s) => {
       return s.end(Sz);
     }
     if (p.startsWith('/api/u/')) {
-      const l = decodeURIComponent(p.slice(7)).toLowerCase(), L = U.get(l);
-      if (!L || !S) return no(s);
-      const row = S.lead.findIndex((r) => r[0].toLowerCase() === l);
-      return js(q, s, { row: S.lead[row], rank: row + 1, of: S.lead.length, prs: [...L].sort((a, b) => b[2] - a[2]) }, 'public, max-age=30');
+      const l = decodeURIComponent(p.slice(7)).toLowerCase(), L = U.get(l) || [];
+      const row = S ? S.lead.findIndex((r) => r[0].toLowerCase() === l) : -1;
+      if (row < 0) return no(s);
+      return js(q, s, { row: S.lead[row], rank: row + 1, of: S.lead.length, prs: [...L].sort((a, b) => b[2] - a[2]), cm: C.get(l) || [] }, 'public, max-age=30');
     }
     if (p === '/api/session') {
       const c = uk(ck(q).s || '');
