@@ -33,7 +33,8 @@ async function gh(u, h = hd) {
 }
 
 const db = rj('db.json', { a: {}, p: {}, u: {}, r: [], ca: {}, c: {} });
-db.a ||= {}; db.p ||= {}; db.u ||= {}; db.r ||= []; db.ca ||= {}; db.c ||= {};
+db.a ||= {}; db.p ||= {}; db.u ||= {}; db.r ||= []; db.ca ||= {}; db.c ||= {}; db.pm ||= [];
+if (db.v !== 2) { for (const s of Object.values(db.a)) { s.cur = null; s.start = null; s.aft = null; } db.v = 2; }
 let dirty = 0, rt = 0, err = null;
 const sec = (t) => (t ? Math.round(Date.parse(t) / 1000) : 0);
 const okr = (r) => !r.archived && !/^placeholder-/i.test(r.name) && /craft/i.test(r.name);
@@ -41,6 +42,7 @@ const okr = (r) => !r.archived && !/^placeholder-/i.test(r.name) && /craft/i.tes
 async function repos() {
   const j = await gh(`/orgs/${O}/repos?per_page=100&type=public`);
   db.r = j.filter(okr).map((r) => ({ n: r.name, s: r.stargazers_count, f: r.forks_count, d: r.description || '' }));
+  db.pm = (await gh(`/orgs/${O}/public_members?per_page=100`)).map((m) => m.login);
   rt = Date.now(); dirty = 1;
 }
 
@@ -58,7 +60,7 @@ async function sq() {
   db.q = q; qt = Date.now(); dirty = 1;
 }
 
-const PQ = `query($o:String!,$r:String!,$a:String){repository(owner:$o,name:$r){pullRequests(first:100,after:$a,orderBy:{field:UPDATED_AT,direction:DESC}){pageInfo{hasNextPage endCursor}nodes{number title createdAt mergedAt closedAt updatedAt author{__typename login ...on User{databaseId}}}}}}`;
+const PQ = `query($o:String!,$r:String!,$a:String){repository(owner:$o,name:$r){pullRequests(first:100,after:$a,orderBy:{field:UPDATED_AT,direction:DESC}){pageInfo{hasNextPage endCursor}nodes{number title createdAt mergedAt closedAt updatedAt mergedBy{login} author{__typename login ...on User{databaseId}}}}}}`;
 async function gql(q, v) {
   const r = await fetch('https://api.github.com/graphql', { method: 'POST', headers: { ...hd, 'Content-Type': 'application/json' }, body: JSON.stringify({ query: q, variables: v }), signal: AbortSignal.timeout(30000) });
   if (!r.ok) throw new Error('graphql ' + r.status);
@@ -116,7 +118,7 @@ async function sync() {
         if (!q.author) continue;
         if (q.author.databaseId) db.u[q.author.login] = q.author.databaseId;
         const al = q.author.__typename === 'Bot' && !/\[bot\]$/.test(q.author.login) ? q.author.login + '[bot]' : q.author.login;
-        pp[q.number] = [al, sec(q.createdAt), sec(q.mergedAt), sec(q.closedAt), (q.title || '').slice(0, 140)];
+        pp[q.number] = [al, sec(q.createdAt), sec(q.mergedAt), sec(q.closedAt), (q.title || '').slice(0, 140), (q.mergedBy && q.mergedBy.login) || ''];
       }
       dirty = 1;
       const ls = pr.nodes[pr.nodes.length - 1];
@@ -147,7 +149,8 @@ function build() {
   const ppl = new Map(), wks = new Map(), rp = rs.map((n) => ({ n, m: 0, o: 0, op: 0, c: new Set(), t: [], cm: 0, b: null }));
   const all = [];
   let tm = 0, op = 0, m1 = 0, m7 = 0, t30 = [];
-  const np = (l, c) => { let p = ppl.get(l); if (!p) { p = { l, i: db.u[l] || 0, m: 0, o: 0, op: 0, m7: 0, m30: 0, r: {}, f: c, ls: c, t: [], cm: 0, cr: {}, b: [] }; ppl.set(l, p); } return p; };
+  const mb = new Map();
+  const np = (l, c) => { let p = ppl.get(l); if (!p) { p = { l, i: db.u[l] || 0, m: 0, o: 0, op: 0, m7: 0, m30: 0, r: {}, f: c, ls: c, t: [], cm: 0, c7: 0, c30: 0, cr: {}, b: [] }; ppl.set(l, p); } return p; };
   const CX = new Map();
   let tc = 0;
   for (const rn of rs) {
@@ -156,6 +159,8 @@ function build() {
       if (bot(l)) continue;
       const p = np(l, t);
       p.cm++; R.cm++; tc++;
+      if (now - t < 7 * 86400) p.c7++;
+      if (now - t < 30 * 86400) p.c30++;
       p.cr[rn] = (p.cr[rn] || 0) + 1;
       if (t < p.f) p.f = t;
       if (t > p.ls) p.ls = t;
@@ -166,7 +171,8 @@ function build() {
   }
   for (const rn of rs) {
     const R = rp[ri[rn]];
-    for (const [nr, [l, c, m, x, ti]] of Object.entries(db.p[rn] || {})) {
+    for (const [nr, [l, c, m, x, ti, by]] of Object.entries(db.p[rn] || {})) {
+      if (by && !bot(by)) mb.set(by, (mb.get(by) || 0) + 1);
       if (bot(l)) continue;
       const p = np(l, c);
       p.o++; R.o++; R.c.add(l);
@@ -227,13 +233,16 @@ function build() {
     const ar = new Set([...Object.keys(p.r), ...Object.keys(p.cr)]);
     return [p.l, p.i, p.m, p.o, p.op, p.m7, p.m30, ar.size, tr[0] ? tr[0][0] : ca[0] ? ca[0][0] : '', p.f, p.ls, med(p.t), p.cm, p.b, p.m + (p.o - p.op - p.m) >= 5 ? Math.round(p.m / (p.o - p.op) * 1000) / 1000 : null, p.rv || 0];
   }).sort((a, b) => b[2] - a[2] || b[12] - a[12] || b[3] - a[3]);
+  const tn = new Set([...mb.keys(), ...db.pm].map((l) => l.toLowerCase()));
+  const team = [...new Set([...mb.keys(), ...db.pm])].map((l) => [l, db.u[l] || 0, mb.get(l) || 0, db.pm.includes(l) ? 1 : 0, ppl.has(l) ? 1 : 0]).sort((a, b) => b[2] - a[2] || b[3] - a[3]);
+  for (const x of lead) x.push(tn.has(x[0].toLowerCase()) ? 1 : 0, mb.get(x[0]) || 0, ppl.get(x[0]).c7, ppl.get(x[0]).c30);
   all.sort((a, b) => b[0] - a[0]);
   const n30 = [...ppl.values()].filter((p) => now - p.f < 30 * 86400).length;
   S = {
     at: Math.round(now), sync: !db.r.length ? 1 : db.r.filter((r) => !db.a[r.n] || !db.a[r.n].cur || !db.ca[r.n] || !db.ca[r.n].cur).length, err,
     k: { c: ppl.size, m: tm, o: op, cm: tc, m1, m7, t: med(t30), n30, pr: all.length && rp.reduce((s, r) => s + r.o, 0) },
     rs: rp.map((r) => ({ n: r.n, m: r.m, o: r.o, op: r.op, c: r.c.size, t: med(r.t), cm: r.cm, b: r.b, q: (db.q || {})[r.n] || null, s: (db.r.find((x) => x.n === r.n) || {}).s || 0 })),
-    pre, days: days.map((d) => [d.d, d.o, d.x, d.m, d.a.size, d.n]), weeks, heat, hist, lead, recent: all.slice(0, 40),
+    pre, days: days.map((d) => [d.d, d.o, d.x, d.m, d.a.size, d.n]), weeks, heat, hist, lead, team, recent: all.slice(0, 40),
   };
   Sz = zlib.gzipSync(JSON.stringify(S));
   const idx = new Map();

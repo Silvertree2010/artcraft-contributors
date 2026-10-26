@@ -163,12 +163,18 @@ function qual() {
     <td><span class="st ${g[0]}">${g[1]}</span></td><td class="n">${k(q.code_smells)}</td><td class="n">${q.code_smells != null ? (q.code_smells / q.ncloc * 1000).toFixed(1) : '–'}</td>
     <td class="n hide-s dim">${k(q.bugs)}</td><td class="n hide-s dim">${k(q.vulnerabilities)}</td><td class="n hide-s dim">${k(q.coverage, '%', 1)}</td><td class="n hide-s dim">${k(q.duplicated_lines_density, '%', 1)}</td><td class="n hide-s dim">${k(q.ncloc)}</td></tr>`; }).join('')}</tbody></table></div></section>`;
 }
+const tmt = (x) => x[17] ? `Merged ${N(x[17])} PRs, so likely has write access` : 'Public member of the storytold org';
+const tb = (x) => x[16] ? `<span class="st n tm" data-t="${esc(tmt(x))}">Team</span>` : '';
+function team() {
+  if (!S.team || !S.team.length) return '';
+  return `<section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Team</h2><span class="sub">Presumed, from who merges PRs and public org members</span></div><ul class="team">${S.team.map(([l, i, m, pm, k]) => `<li><${k ? `a href="#/u/${encodeURIComponent(l)}"` : `a href="https://github.com/${encodeURIComponent(l)}" target="_blank" rel="noopener"`} class="who"><img loading="lazy" src="${av(l, i)}" alt="">${esc(l)}</a><span class="m">${m ? `${N(m)} merges` : 'Org member'}</span></li>`).join('')}</ul></section>`;
+}
 const blt = (b) => !b || !b.length ? '<span class="dim">–</span>' : b.slice(0, 2).map((n) => `<span style="color:${ink(n)}">${esc(ap(n)[0])}</span>`).join(', ') + (b.length > 2 ? ` <span class="dim">+${b.length - 2}</span>` : '');
 
-const PI = { all: 2, '30d': 6, '7d': 5 };
+const PI = { all: 2, '30d': 6, '7d': 5 }, CI = { all: 12, '30d': 19, '7d': 18 };
 function lead(full) {
-  const pc = PI[per];
-  let r = S.lead.filter((x) => x[pc] > 0 || per === 'all');
+  const pc = PI[per], cc = CI[per];
+  let r = S.lead.filter((x) => x[pc] > 0 || x[cc] > 0 || per === 'all');
   if (srt) r = r.slice().sort((a, b) => (a[srt[0]] == null) - (b[srt[0]] == null) || srt[1] * (a[srt[0]] - b[srt[0]]));
   else r = r.slice().sort((a, b) => b[pc] - a[pc] || b[3] - a[3]);
   const rk = new Map(r.map((x, i) => [x[0], i + 1]));
@@ -176,10 +182,10 @@ function lead(full) {
   const lm = full ? lim : 15, sh = r.slice(0, lm);
   const th = (i, t, c = 'n') => `<th class="s ${c} ${srt && srt[0] === i ? 'on' : ''}" data-s="${i}">${t}</th>`;
   const me = ME && ME.l.toLowerCase();
-  return `<div class="tw"><table><thead><tr><th class="n">#</th><th>Contributor</th>${th(pc, 'Merged')}${th(12, 'Commits', 'n hide-s')}${th(14, 'Merge rate', 'n hide-s')}${th(15, 'Reverted', 'n hide-s')}${th(7, 'Apps', 'n hide-s')}<th class="hide-s">Mostly</th><th class="hide-s">Built</th>${th(11, 'Median merge', 'n hide-s')}${th(10, 'Last active', 'n hide-s')}</tr></thead><tbody>
+  return `<div class="tw"><table><thead><tr><th class="n">#</th><th>Contributor</th>${th(pc, 'Merged')}${th(cc, 'Commits', 'n hide-s')}${th(14, 'Merge rate', 'n hide-s')}${th(15, 'Reverted', 'n hide-s')}${th(7, 'Apps', 'n hide-s')}<th class="hide-s">Mostly</th><th class="hide-s">Built</th>${th(11, 'Median merge', 'n hide-s')}${th(10, 'Last active', 'n hide-s')}</tr></thead><tbody>
     ${sh.map((x) => `<tr class="lk ${me === x[0].toLowerCase() ? 'me-row' : ''}" data-u="${esc(x[0])}"><td class="n dim">${rk.get(x[0])}</td>
-    <td><span class="who"><img loading="lazy" src="${av(x[0], x[1])}" alt="">${esc(x[0])}</span></td>
-    <td class="n">${N(x[pc])}</td><td class="n hide-s dim">${N(x[12])}</td><td class="n hide-s dim">${pc0(x[14])}</td><td class="n hide-s dim">${N(x[15])}</td><td class="n hide-s dim">${x[7]}</td>
+    <td><span class="who"><img loading="lazy" src="${av(x[0], x[1])}" alt="">${esc(x[0])}${tb(x)}</span></td>
+    <td class="n">${N(x[pc])}</td><td class="n hide-s dim">${N(x[cc])}</td><td class="n hide-s dim">${pc0(x[14])}</td><td class="n hide-s dim">${N(x[15])}</td><td class="n hide-s dim">${x[7]}</td>
     <td class="hide-s" style="color:${x[8] ? ink(x[8]) : ''}">${x[8] ? esc(ap(x[8])[0]) : '–'}</td><td class="hide-s">${blt(x[13])}</td><td class="n hide-s dim">${du(x[11])}</td><td class="n hide-s dim">${ago(x[10])}</td></tr>`).join('')}
     </tbody></table></div>${!sh.length ? '<p class="empty">No one matches.</p>' : ''}
     ${full && r.length > lm ? `<button class="btn more" id="more">Show more (${N(r.length - lm)} left)</button>` : ''}
@@ -213,6 +219,7 @@ function overview() {
   </div>
   <section class="box" style="margin-bottom:24px"><div class="box-h"><h2>When PRs get merged</h2><span class="sub">Your local time</span></div>${heat()}</section>
   <section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Leaderboard</h2>${segs()}</div><div id="lead">${lead(false)}</div></section>
+  ${team()}
   ${qual()}
   <div class="grid g2">
     <section class="box"><div class="box-h"><h2>Apps</h2></div>${apps()}</section>
@@ -276,7 +283,7 @@ async function user(l) {
   let d;
   try { d = await get('/api/u/' + encodeURIComponent(l)); } catch (e) { return `<div class="top"><h1>${esc(l)}</h1></div><p class="empty">No contributions to the Craft apps from this account.</p>`; }
   const r = d.row;
-  return `<div class="prof"><img src="${av(r[0], r[1], 144)}" alt=""><div class="x"><h1>${esc(r[0])}</h1><div class="sub">First contribution ${dt(r[9], 1)}, <a href="https://github.com/${encodeURIComponent(r[0])}" target="_blank" rel="noopener">GitHub profile</a></div></div></div>${prof(d, r[0])}`;
+  return `<div class="prof"><img src="${av(r[0], r[1], 144)}" alt=""><div class="x"><h1>${esc(r[0])}${tb(r)}</h1><div class="sub">${r[16] ? esc(tmt(r)) + '. ' : ''}First contribution ${dt(r[9], 1)}, <a href="https://github.com/${encodeURIComponent(r[0])}" target="_blank" rel="noopener">GitHub profile</a></div></div></div>${prof(d, r[0])}`;
 }
 
 function chips(p) {

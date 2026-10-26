@@ -94,6 +94,12 @@ tr.lk:hover td { background: var(--sunken); }
 .dim { color: var(--muted); }
 .who { display: flex; align-items: center; gap: 10px; color: var(--ink); font-weight: 500; }
 .who img { width: 24px; height: 24px; border: 1px solid var(--line); background: var(--sunken); }
+.who .tm { margin-left: 2px; }
+h1 .tm { margin-left: 12px; vertical-align: middle; font-size: 11px; }
+.team { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0 24px; }
+.team li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+.team .who:hover { text-decoration: none; color: var(--strong); }
+.team .m { color: var(--faint); font-size: 12px; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .me-row td { box-shadow: inset 3px 0 0 var(--accent); }
 .app { display: flex; align-items: center; gap: 10px; font-weight: 500; }
 .app img { width: 22px; height: 22px; }
