@@ -60,7 +60,14 @@ async function sq() {
   db.q = q; qt = Date.now(); dirty = 1;
 }
 
-const PQ = `query($o:String!,$r:String!,$a:String){repository(owner:$o,name:$r){pullRequests(first:100,after:$a,orderBy:{field:UPDATED_AT,direction:DESC}){pageInfo{hasNextPage endCursor}nodes{number title createdAt mergedAt closedAt updatedAt mergedBy{login} author{__typename login ...on User{databaseId}}}}}}`;
+const PF = 'number title createdAt mergedAt closedAt updatedAt mergedBy{login} author{__typename login ...on User{databaseId}}';
+const PQ = `query($o:String!,$r:String!,$a:String){repository(owner:$o,name:$r){pullRequests(first:100,after:$a,orderBy:{field:UPDATED_AT,direction:DESC}){pageInfo{hasNextPage endCursor}nodes{${PF}}}}}`;
+const pt = (q) => {
+  if (!q.author) return null;
+  if (q.author.databaseId) db.u[q.author.login] = q.author.databaseId;
+  const al = q.author.__typename === 'Bot' && !/\[bot\]$/.test(q.author.login) ? q.author.login + '[bot]' : q.author.login;
+  return [al, sec(q.createdAt), sec(q.mergedAt), sec(q.closedAt), (q.title || '').slice(0, 140), (q.mergedBy && q.mergedBy.login) || ''];
+};
 async function gql(q, v) {
   const r = await fetch('https://api.github.com/graphql', { method: 'POST', headers: { ...hd, 'Content-Type': 'application/json' }, body: JSON.stringify({ query: q, variables: v }), signal: AbortSignal.timeout(30000) });
   if (!r.ok) throw new Error('graphql ' + r.status);
@@ -114,12 +121,7 @@ async function sync() {
       const j = await gql(PQ, { o: O, r: rn, a: s.aft });
       n++;
       const pr = j.repository.pullRequests, pp = (db.p[rn] ||= {});
-      for (const q of pr.nodes) {
-        if (!q.author) continue;
-        if (q.author.databaseId) db.u[q.author.login] = q.author.databaseId;
-        const al = q.author.__typename === 'Bot' && !/\[bot\]$/.test(q.author.login) ? q.author.login + '[bot]' : q.author.login;
-        pp[q.number] = [al, sec(q.createdAt), sec(q.mergedAt), sec(q.closedAt), (q.title || '').slice(0, 140), (q.mergedBy && q.mergedBy.login) || ''];
-      }
+      for (const q of pr.nodes) { const v = pt(q); if (v) pp[q.number] = v; }
       dirty = 1;
       const ls = pr.nodes[pr.nodes.length - 1];
       if (!pr.pageInfo.hasNextPage || (s.cur && ls && ls.updatedAt < s.cur)) { s.cur = s.start; s.start = null; s.aft = null; }
@@ -131,12 +133,44 @@ async function sync() {
   }
 }
 
+let lw = 0, lbusy = 0;
+async function live() {
+  if (!db.r.length || lbusy) return;
+  lbusy = 1;
+  try {
+    const q = `query($s:GitTimestamp){${db.r.map((r, i) => `r${i}:repository(owner:"${O}",name:${JSON.stringify(r.n)}){pullRequests(first:30,orderBy:{field:UPDATED_AT,direction:DESC}){nodes{${PF}}} defaultBranchRef{target{...on Commit{history(first:100,since:$s){nodes{oid committedDate author{user{login databaseId}}}}}}}}`).join(' ')}}`;
+    const j = await gql(q, { s: new Date(Date.now() - 15 * 60e3).toISOString() });
+    let ch = 0;
+    db.r.forEach((r, i) => {
+      const x = j['r' + i];
+      if (!x) return;
+      const pp = (db.p[r.n] ||= {}), cc = (db.c[r.n] ||= {});
+      for (const n of x.pullRequests.nodes) {
+        const v = pt(n);
+        if (v && JSON.stringify(pp[n.number]) !== JSON.stringify(v)) { pp[n.number] = v; ch = 1; }
+      }
+      const h = x.defaultBranchRef && x.defaultBranchRef.target && x.defaultBranchRef.target.history;
+      for (const c of h ? h.nodes : []) {
+        const us = c.author && c.author.user, k = c.oid.slice(0, 10);
+        if (!us || cc[k]) continue;
+        if (us.databaseId) db.u[us.login] = us.databaseId;
+        cc[k] = [us.login, sec(c.committedDate)]; ch = 1;
+      }
+    });
+    if (ch) {
+      dirty = 1; build();
+      if (Date.now() - lw > 120e3) { wj('db.json', db); dirty = 0; lw = Date.now(); }
+    }
+  } catch (e) { console.error('[live]', e.message); }
+  lbusy = 0;
+}
+
 const bot = (l) => /\[bot\]$/i.test(l);
 const med = (a) => { if (!a.length) return null; const s = [...a].sort((x, y) => x - y), m = s.length >> 1; return s.length & 1 ? s[m] : (s[m - 1] + s[m]) / 2; };
 const TB = [3600, 3 * 3600, 6 * 3600, 12 * 3600, 86400, 2 * 86400, 4 * 86400, 7 * 86400, Infinity];
 const wk = (t) => Math.floor((t / 86400 + 3) / 7);
 
-let S = null, Sz = null, U = new Map(), C = new Map();
+let S = null, Sz = null, U = new Map(), C = new Map(), ver = 0;
 
 function build() {
   const now = Date.now() / 1000;
@@ -242,7 +276,7 @@ function build() {
     at: Math.round(now), sync: !db.r.length ? 1 : db.r.filter((r) => !db.a[r.n] || !db.a[r.n].cur || !db.ca[r.n] || !db.ca[r.n].cur).length, err,
     k: { c: ppl.size, m: tm, o: op, cm: tc, m1, m7, t: med(t30), n30, pr: all.length && rp.reduce((s, r) => s + r.o, 0) },
     rs: rp.map((r) => ({ n: r.n, m: r.m, o: r.o, op: r.op, c: r.c.size, t: med(r.t), cm: r.cm, b: r.b, q: (db.q || {})[r.n] || null, s: (db.r.find((x) => x.n === r.n) || {}).s || 0 })),
-    pre, days: days.map((d) => [d.d, d.o, d.x, d.m, d.a.size, d.n]), weeks, heat, hist, lead, team, recent: all.slice(0, 40),
+    v: ++ver, pre, days: days.map((d) => [d.d, d.o, d.x, d.m, d.a.size, d.n]), weeks, heat, hist, lead, team, recent: all.slice(0, 40),
   };
   Sz = zlib.gzipSync(JSON.stringify(S));
   const idx = new Map();
@@ -326,14 +360,15 @@ http.createServer(async (q, s) => {
   try {
     if (p === '/api/stats') {
       if (!Sz) return no(s, 503, 'warming up');
-      s.writeHead(200, { 'Content-Type': 'application/json', 'Content-Encoding': 'gzip', 'Cache-Control': 'public, max-age=30' });
+      s.writeHead(200, { 'Content-Type': 'application/json', 'Content-Encoding': 'gzip', 'Cache-Control': 'no-cache' });
       return s.end(Sz);
     }
+    if (p === '/api/v') { s.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); return s.end(`{"v":${ver}}`); }
     if (p.startsWith('/api/u/')) {
       const l = decodeURIComponent(p.slice(7)).toLowerCase(), L = U.get(l) || [];
       const row = S ? S.lead.findIndex((r) => r[0].toLowerCase() === l) : -1;
       if (row < 0) return no(s);
-      return js(q, s, { row: S.lead[row], rank: row + 1, of: S.lead.length, prs: [...L].sort((a, b) => b[2] - a[2]), cm: C.get(l) || [] }, 'public, max-age=30');
+      return js(q, s, { row: S.lead[row], rank: row + 1, of: S.lead.length, prs: [...L].sort((a, b) => b[2] - a[2]), cm: C.get(l) || [] }, 'no-cache');
     }
     if (p === '/api/session') {
       const c = uk(ck(q).s || '');
@@ -379,4 +414,5 @@ build();
 let busy = 0;
 const run = async () => { if (busy) return; busy = 1; await tick(); busy = 0; };
 setInterval(run, 60e3);
+setInterval(live, 10e3);
 run();

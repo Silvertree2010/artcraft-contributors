@@ -25,6 +25,25 @@ const du = (s) => s == null ? '–' : s < 3600 ? Math.max(1, Math.round(s / 60))
 const ago = (t) => { const s = Date.now() / 1000 - t; return s < 3600 ? Math.max(1, Math.round(s / 60)) + 'm ago' : s < 86400 ? Math.round(s / 3600) + 'h ago' : s < 86400 * 30 ? Math.round(s / 86400) + 'd ago' : dt(t); };
 const dt = (t, y) => new Date(t * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', ...(y ? { year: 'numeric' } : {}) });
 const ts = (x) => Date.parse(x) / 1000;
+const nk = (k, v) => v == null ? '–' : `<span data-k="${esc(k)}" data-v="${v}">${N(v)}</span>`;
+const NV = new Map(), rm = matchMedia('(prefers-reduced-motion: reduce)');
+function roll() {
+  document.querySelectorAll('[data-k]').forEach((el) => {
+    const k = el.dataset.k, v = +el.dataset.v, o = NV.get(k);
+    NV.set(k, v);
+    if (o == null || o === v || rm.matches) return;
+    const t0 = performance.now(), D = Math.min(2400, 900 + 120 * Math.abs(v - o));
+    el.textContent = N(o); el.classList.add('up');
+    const f = (t) => {
+      const p = Math.min(1, (t - t0) / D), e = 1 - Math.pow(1 - p, 3);
+      el.textContent = N(Math.round(o + (v - o) * e));
+      if (p < 1 && el.isConnected) requestAnimationFrame(f); else el.classList.remove('up');
+    };
+    requestAnimationFrame(f);
+  });
+}
+const sa = (t) => { const s = Math.max(0, Math.round(Date.now() / 1000 - t)); return s < 60 ? s + 's ago' : ago(t); };
+setInterval(() => { const e = $('#upd'); if (e && S) e.textContent = sa(S.at); }, 1000);
 
 let S = null, ME = null, ON = false, hid = new Set(), per = 'all', srt = null, lim = 50, q = '';
 
@@ -149,7 +168,7 @@ function apps() {
   const r = S.rs.filter((x) => x.o || x.cm).sort((a, b) => b.cm - a.cm || b.m - a.m), mx = Math.max(1, ...r.map((x) => x.cm));
   return `<div class="tw"><table><thead><tr><th>App</th><th class="n">Commits</th><th class="n hide-s">Merged</th><th class="hide-s">Built by</th><th style="width:18%" class="hide-s"></th></tr></thead><tbody>${r.map((x) => `<tr>
     <td><a class="app" href="https://github.com/storytold/${esc(x.n)}" target="_blank" rel="noopener" style="color:${ink(x.n)}"><img src="${ico(x.n)}" alt="">${esc(ap(x.n)[0])}</a></td>
-    <td class="n">${N(x.cm)}</td><td class="n hide-s dim">${N(x.m)}</td><td class="hide-s" style="white-space:nowrap">${x.b ? `<a class="dim" href="#/u/${encodeURIComponent(x.b)}">${esc(x.b)}</a>` : '<span class="dim">–</span>'}</td>
+    <td class="n">${nk('a.c.' + x.n, x.cm)}</td><td class="n hide-s dim">${nk('a.m.' + x.n, x.m)}</td><td class="hide-s" style="white-space:nowrap">${x.b ? `<a class="dim" href="#/u/${encodeURIComponent(x.b)}">${esc(x.b)}</a>` : '<span class="dim">–</span>'}</td>
     <td class="hide-s"><div class="bar"><i style="width:${x.cm / mx * 100}%;background:${col(x.n)}"></i></div></td></tr>`).join('')}</tbody></table></div>`;
 }
 const pc0 = (x) => x == null ? '–' : Math.round(x * 100) + '%';
@@ -167,7 +186,7 @@ const tmt = (x) => x[17] ? `Merged ${N(x[17])} PRs, so likely has write access` 
 const tb = (x) => x[16] ? `<span class="st n tm" data-t="${esc(tmt(x))}">Team</span>` : '';
 function team() {
   if (!S.team || !S.team.length) return '';
-  return `<section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Team</h2><span class="sub">Presumed, from who merges PRs and public org members</span></div><ul class="team">${S.team.map(([l, i, m, pm, k]) => `<li><${k ? `a href="#/u/${encodeURIComponent(l)}"` : `a href="https://github.com/${encodeURIComponent(l)}" target="_blank" rel="noopener"`} class="who"><img loading="lazy" src="${av(l, i)}" alt="">${esc(l)}</a><span class="m">${m ? `${N(m)} merges` : 'Org member'}</span></li>`).join('')}</ul></section>`;
+  return `<section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Team</h2><span class="sub">Presumed, from who merges PRs and public org members</span></div><ul class="team">${S.team.map(([l, i, m, pm, k]) => `<li><${k ? `a href="#/u/${encodeURIComponent(l)}"` : `a href="https://github.com/${encodeURIComponent(l)}" target="_blank" rel="noopener"`} class="who"><img loading="lazy" src="${av(l, i)}" alt="">${esc(l)}</a><span class="m">${m ? `${nk('t.' + l, m)} merges` : 'Org member'}</span></li>`).join('')}</ul></section>`;
 }
 const blt = (b) => !b || !b.length ? '<span class="dim">–</span>' : b.slice(0, 2).map((n) => `<span style="color:${ink(n)}">${esc(ap(n)[0])}</span>`).join(', ') + (b.length > 2 ? ` <span class="dim">+${b.length - 2}</span>` : '');
 
@@ -185,7 +204,7 @@ function lead(full) {
   return `<div class="tw"><table><thead><tr><th class="n">#</th><th>Contributor</th>${th(pc, 'Merged')}${th(cc, 'Commits', 'n hide-s')}${th(14, 'Merge rate', 'n hide-s')}${th(15, 'Reverted', 'n hide-s')}${th(7, 'Apps', 'n hide-s')}<th class="hide-s">Mostly</th><th class="hide-s">Built</th>${th(11, 'Median merge', 'n hide-s')}${th(10, 'Last active', 'n hide-s')}</tr></thead><tbody>
     ${sh.map((x) => `<tr class="lk ${me === x[0].toLowerCase() ? 'me-row' : ''}" data-u="${esc(x[0])}"><td class="n dim">${rk.get(x[0])}</td>
     <td><span class="who"><img loading="lazy" src="${av(x[0], x[1])}" alt="">${esc(x[0])}${tb(x)}</span></td>
-    <td class="n">${N(x[pc])}</td><td class="n hide-s dim">${N(x[cc])}</td><td class="n hide-s dim">${pc0(x[14])}</td><td class="n hide-s dim">${N(x[15])}</td><td class="n hide-s dim">${x[7]}</td>
+    <td class="n">${nk(`l.${x[0]}.${pc}`, x[pc])}</td><td class="n hide-s dim">${nk(`l.${x[0]}.${cc}`, x[cc])}</td><td class="n hide-s dim">${pc0(x[14])}</td><td class="n hide-s dim">${N(x[15])}</td><td class="n hide-s dim">${x[7]}</td>
     <td class="hide-s" style="color:${x[8] ? ink(x[8]) : ''}">${x[8] ? esc(ap(x[8])[0]) : '–'}</td><td class="hide-s">${blt(x[13])}</td><td class="n hide-s dim">${du(x[11])}</td><td class="n hide-s dim">${ago(x[10])}</td></tr>`).join('')}
     </tbody></table></div>${!sh.length ? '<p class="empty">No one matches.</p>' : ''}
     ${full && r.length > lm ? `<button class="btn more" id="more">Show more (${N(r.length - lm)} left)</button>` : ''}
@@ -202,15 +221,15 @@ function feed() {
 
 function overview() {
   const k = S.k;
-  return `<div class="top"><div><h1>Craft App Suite contributions</h1></div><span class="sub">${S.sync ? `Syncing ${S.sync} repos, ` : ''}Updated ${ago(S.at)}</span></div>
+  return `<div class="top"><div><h1>Craft App Suite contributions</h1></div><span class="sub"><i class="lv"></i>Live${S.sync ? `, syncing ${S.sync} repos` : ''}, updated <span id="upd">${sa(S.at)}</span></span></div>
   ${S.err ? `<div class="err">GitHub sync error: ${esc(S.err)}</div>` : ''}
   <div class="kpi">
-    <div><span class="lbl">Contributors</span><b>${N(k.c)}</b></div>
-    <div><span class="lbl">Merged PRs</span><b>${N(k.m)}</b></div>
-    <div><span class="lbl">Commits</span><b>${N(k.cm)}</b></div>
-    <div><span class="lbl">Merged, 7d</span><b>${N(k.m7)}</b></div>
+    <div><span class="lbl">Contributors</span><b>${nk('k.c', k.c)}</b></div>
+    <div><span class="lbl">Merged PRs</span><b>${nk('k.m', k.m)}</b></div>
+    <div><span class="lbl">Commits</span><b>${nk('k.cm', k.cm)}</b></div>
+    <div><span class="lbl">Merged, 7d</span><b>${nk('k.m7', k.m7)}</b></div>
     <div><span class="lbl">Median merge, 30d</span><b>${du(k.t)}</b></div>
-    <div><span class="lbl">New people, 30d</span><b>${N(k.n30)}</b></div>
+    <div><span class="lbl">New people, 30d</span><b>${nk('k.n30', k.n30)}</b></div>
   </div>
   <section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Merged per day</h2></div><div id="daily">${daily()}</div>${legend()}</section>
   <div class="grid g32">
@@ -265,8 +284,8 @@ function prof(d, l, mine) {
   const lp = mine ? 100 : 30;
   return `<div class="kpi">
     <div><span class="lbl">Rank</span><b>${d.rank} <span class="sub" style="font:400 14px Inter">of ${N(d.of)}</span></b></div>
-    <div><span class="lbl">Merged</span><b>${N(r[2])}</b></div>
-    <div><span class="lbl">Commits</span><b>${N(r[12])}</b></div>
+    <div><span class="lbl">Merged</span><b>${nk('p.m', r[2])}</b></div>
+    <div><span class="lbl">Commits</span><b>${nk('p.c', r[12])}</b></div>
     <div><span class="lbl">Merge rate</span><b>${pc0(r[14])}</b></div>
     <div><span class="lbl">Reverted</span><b>${N(r[15])}</b></div>
     <div><span class="lbl">Median merge</span><b>${du(r[11])}</b></div>
@@ -336,11 +355,12 @@ function bl() {
   L.querySelectorAll('th.s').forEach((h) => h.onclick = () => { const i = +h.dataset.s; srt = srt && srt[0] === i ? (srt[1] === -1 ? [i, 1] : null) : [i, i === 11 ? 1 : -1]; relead(); });
   const mo = $('#more'); if (mo) mo.onclick = () => { lim += 100; relead(); };
 }
-function relead() { const L = $('#lead'); if (L) { L.innerHTML = lead(!!$('#q')); bl(); } }
+function relead() { const L = $('#lead'); if (L) { L.innerHTML = lead(!!$('#q')); bl(); roll(); } }
 
-let seq = 0;
+let seq = 0, lh = null;
 async function route() {
   const id = ++seq, h = location.hash.replace(/^#\/?/, ''), [p, a] = h.split('/');
+  if (h !== lh) { NV.clear(); lh = h; }
   hdr();
   const m = $('#m');
   if (p === 'me') { m.innerHTML = '<p class="empty">Loading…</p>'; const x = await mine(); if (id === seq) m.innerHTML = x; }
@@ -348,11 +368,11 @@ async function route() {
   else if (p === 'u' && a) { m.innerHTML = '<p class="empty">Loading…</p>'; const x = await user(decodeURIComponent(a)); if (id === seq) m.innerHTML = x; }
   else if (p === 'people') m.innerHTML = people();
   else m.innerHTML = overview();
-  if (id === seq) { bind(); if (!a) scrollTo(0, 0); }
+  if (id === seq) { bind(); roll(); if (!a) scrollTo(0, 0); }
 }
 
 async function load() {
-  try { S = await get('/api/stats'); } catch (e) { if (!S) $('#m').innerHTML = `<p class="empty">${e.s === 503 ? 'Syncing with GitHub.' : 'Could not load data.'}</p>`; setTimeout(load, 15000); return false; }
+  try { S = await get('/api/stats?v=' + Date.now()); } catch (e) { if (!S) $('#m').innerHTML = `<p class="empty">${e.s === 503 ? 'Syncing with GitHub.' : 'Could not load data.'}</p>`; setTimeout(load, 15000); return false; }
   return true;
 }
 
@@ -363,6 +383,16 @@ dk.addEventListener('change', route);
   hdr();
   if (await load()) route();
   else if (location.hash.startsWith('#/me')) route();
-  setInterval(async () => { const p = location.hash.replace(/^#\/?/, '').split('/')[0]; if (await load() && (p === '' || p === 'people') && !document.querySelector('#q:focus')) { const y = scrollY; await route(); scrollTo(0, y); } }, 120000);
+  let bz = 0;
+  setInterval(async () => {
+    if (bz || document.hidden || !S) return;
+    bz = 1;
+    try {
+      const { v } = await get('/api/v');
+      const p = location.hash.replace(/^#\/?/, '').split('/')[0];
+      if (v !== S.v && await load() && (p === '' || p === 'people' || p === 'u') && !document.querySelector('#q:focus')) { const y = scrollY; await route(); scrollTo(0, y); }
+    } catch {}
+    bz = 0;
+  }, 3000);
 })();
 })();
