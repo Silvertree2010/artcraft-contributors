@@ -1,6 +1,6 @@
-# Craft Contributors (unofficial)
+# ArtCraft Contributors
 
-Unofficial contributor stats for the Craft app repositories: https://artcraft.apollonet.dev
+Contributor stats for the ArtCraft Craft app bundle: https://artcraft.apollonet.dev
 
 Node 22, no dependencies. The server syncs all pull requests of the Craft repos via the GitHub GraphQL API and serves precomputed stats plus a static frontend with hand-drawn SVG charts.
 
