@@ -221,7 +221,7 @@ function feed() {
 
 function overview() {
   const k = S.k;
-  return `<div class="top"><div><h1>Craft App Suite contributions</h1></div><span class="sub"><i class="lv"></i>Live${S.sync ? `, syncing ${S.sync} repos` : ''}, updated <span id="upd">${sa(S.at)}</span></span></div>
+  return `<div class="top"><div><h1>Craft App Bundle contributions</h1></div><span class="sub"><i class="lv"></i>Live${S.sync ? `, syncing ${S.sync} repos` : ''}, updated <span id="upd">${sa(S.at)}</span></span></div>
   ${S.err ? `<div class="err">GitHub sync error: ${esc(S.err)}</div>` : ''}
   <div class="kpi">
     <div><span class="lbl">Contributors</span><b>${nk('k.c', k.c)}</b></div>
