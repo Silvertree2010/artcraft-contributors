@@ -6,7 +6,7 @@ const AP = {
   designcraft: ['DesignCraft', '#7bb51c', '#457008', '#a6e04a'], figcraft: ['FigCraft', '#02da96', '#047a56', '#4fe8b6'],
   wordcraft: ['WordCraft', '#3f5fe0', '#2a44b8', '#8ea2ff'], soundcraft: ['SoundCraft', '#1fa5c9', '#0e7290', '#5fd0ee'],
   deckcraft: ['DeckCraft', '#f07a1e', '#a84f0a', '#ffa060'], cadcraft: ['CADCraft', '#3ea6e8', '#1a6fa8', '#7cc8ff'],
-  gridcraft: ['GridCraft', '#1f9d55', '#12703a', '#4fd68a'], artcraft: ['ArtCraft', '#4e7bfb', '#2a52c4', '#8aa8ff'],
+  gridcraft: ['GridCraft', '#1f9d55', '#12703a', '#4fd68a'], artcraft: ['artcraft', '#4e7bfb', '#2a52c4', '#8aa8ff'],
   'craft-launcher': ['Launcher', '#8a8a90', '#55555c', '#b5b5bb'], anicraft: ['AniCraft', '#c25bd6', '#8e2fa3', '#e29af0'],
 };
 const NEU = ['#9a958c', '#6b665e', '#c2bdb4'];
@@ -15,7 +15,7 @@ const dk = matchMedia('(prefers-color-scheme: dark)');
 const ap = (n) => AP[n.toLowerCase()] || [n, ...NEU];
 const col = (n) => ap(n)[1];
 const ink = (n) => ap(n)[dk.matches ? 3 : 2];
-const ico = (n) => AP[n.toLowerCase()] && !/^(artcraft|craft-launcher|anicraft)$/.test(n.toLowerCase()) ? `icons/${n.toLowerCase()}.png` : 'icons/artcraft-launcher.svg';
+const ico = (n) => `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" fill="${col(n)}"/></svg>`)}`;
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const av = (l, i, s = 48) => i ? `https://avatars.githubusercontent.com/u/${i}?s=${s}&v=4` : `https://avatars.githubusercontent.com/${encodeURIComponent(l)}?s=${s}`;
