@@ -308,7 +308,7 @@ async function dpoll() {
         const d = Math.floor(z / 86400), dd = new Date(z * 1000);
         X.d[d] = (X.d[d] || 0) + 1;
         const u = (X.u[d] ||= []); if (!u.includes(hs)) u.push(hs);
-        const c = (X.ch[ch] ||= {}); c[d] = (c[d] || 0) + 1;
+        const c = (X.ch[sk0(String(ch))] ||= {}); c[d] = (c[d] || 0) + 1;
         X.h[(dd.getUTCDay() + 6) % 7][dd.getUTCHours()]++;
         if (!X.f || z < X.f) X.f = z;
         if (z > X.z) { X.z = z; X.zi = []; zs.clear(); }
