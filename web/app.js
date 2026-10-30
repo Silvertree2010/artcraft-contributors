@@ -66,7 +66,7 @@ function hdr() {
   $('#nav').innerHTML = [['', 'Overview'], ['people', 'Leaderboard'], ['releases', 'Releases'], ['week', 'This week'], ...(ME ? [['me', 'You']] : [])]
     .map(([k, t]) => `<a href="#/${k}" class="${r === k ? 'on' : ''}">${t}</a>`).join('');
   $('#acct').innerHTML = ME
-    ? `<a href="#/me" title="${esc(ME.l)}"><img src="${av(ME.l, ME.i, 52)}" alt="${esc(ME.l)}"></a><button class="btn" id="out">Sign out</button>`
+    ? `<a href="#/me" title="${esc(ME.l)}"><img src="${av(ME.l, ME.i, 52)}" alt="${esc(ME.l)}"></a><button class="btn ico" id="out" title="Sign out" aria-label="Sign out"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 2H2.5v12H6v-1.5H4V3.5h2zm4.2 2.3-1.06 1.06 1.89 1.89H5.5v1.5h5.53l-1.89 1.89 1.06 1.06L13.9 8z"/></svg></button>`
     : ON ? `<a class="btn pri" href="/auth/login">${GH}<span class="hide-s">Sign in with GitHub</span></a>` : '';
   const o = $('#out');
   if (o) o.onclick = async () => { await fetch('/auth/logout', { method: 'POST' }); ME = null; location.hash = '#/'; route(); };
