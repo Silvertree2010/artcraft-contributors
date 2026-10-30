@@ -467,7 +467,7 @@ function prof(d, l, mine) {
     <section class="box"><div class="box-h"><h2>Apps</h2></div>${ab.length ? (() => { const a = ab.slice(0, 10).map(([n, [m, c2]]) => [ap(n)[0], c2 || m, col(n)]), o = ab.slice(10).reduce((x, y) => x + (y[1][1] || y[1][0]), 0); if (o) a.push(['Other', o, 'var(--line2)']); return donut(a, { s: 'commits', n: 11 }); })() : '<p class="empty">Nothing yet.</p>'}</section>
   </div>
   <div class="grid g2">
-    <form class="box" id="vs" data-a="${esc(r[0])}"><div class="box-h"><h2>Compare</h2></div><div style="display:flex;gap:8px;flex-wrap:wrap"><input class="srch" id="vsq" placeholder="Other GitHub user" autocomplete="off" list="vsl"><datalist id="vsl">${S ? S.lead.slice(0, 200).map((x) => `<option value="${esc(x[0])}">`).join('') : ''}</datalist><button class="btn">Compare</button></div></form>
+    <form class="box" id="vs" data-a="${esc(r[0])}"><div class="box-h"><h2>Compare</h2></div><div style="display:flex;gap:8px;flex-wrap:wrap"><div class="ac"><input class="srch" id="vsq" placeholder="Other GitHub user" autocomplete="off" spellcheck="false"><ul id="vsl" hidden></ul></div><button class="btn">Compare</button></div></form>
     <section class="box"><div class="box-h"><h2>README badge</h2></div>${bdui('u', r[0])}</section>
   </div>`;
 }
@@ -651,7 +651,18 @@ function bind() {
   const tk = $('#tmk');
   if (tk) tk.onclick = (e) => { const kk = e.target.dataset.k; if (!kk) return; tmk = kk; tk.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.k === kk)); $('#tmap').innerHTML = tmap(); };
   const vs = $('#vs');
-  if (vs) vs.onsubmit = (e) => { e.preventDefault(); const v = $('#vsq').value.trim(); if (v) location.hash = `#/vs/${encodeURIComponent(vs.dataset.a)}/${encodeURIComponent(v)}`; };
+  if (vs) {
+    const qi2 = $('#vsq'), ul = $('#vsl'), go = (v) => { if (v) location.hash = `#/vs/${encodeURIComponent(vs.dataset.a)}/${encodeURIComponent(v)}`; };
+    vs.onsubmit = (e) => { e.preventDefault(); const f = ul.querySelector('li'); go(!ul.hidden && f ? f.dataset.l : qi2.value.trim()); };
+    qi2.oninput = () => {
+      const v = qi2.value.trim().toLowerCase();
+      const r = v && S ? S.lead.filter((x) => x[0].toLowerCase().includes(v) && x[0].toLowerCase() !== vs.dataset.a.toLowerCase()).sort((a, b) => (b[0].toLowerCase().startsWith(v)) - (a[0].toLowerCase().startsWith(v))).slice(0, 6) : [];
+      ul.innerHTML = r.map((x) => `<li data-l="${esc(x[0])}"><img src="${av(x[0], x[1])}" alt="">${esc(x[0])}<span>${N(x[2])} merged</span></li>`).join('');
+      ul.hidden = !r.length;
+    };
+    ul.onmousedown = (e) => { const li = e.target.closest('li'); if (li) { e.preventDefault(); go(li.dataset.l); } };
+    qi2.onblur = () => setTimeout(() => { ul.hidden = true; }, 100);
+  }
   m.querySelectorAll('[data-cp]').forEach((b) => b.onclick = async () => { try { await navigator.clipboard.writeText(b.dataset.cp); const t = b.textContent; b.textContent = 'Copied'; setTimeout(() => b.textContent = t, 1400); } catch {} });
   const rf = $('#rf');
   if (rf) rf.onclick = (e) => { const a = e.target.closest('button'); if (!a) return; rapp = a.dataset.r === rapp ? '' : a.dataset.r; rlim = 25; route(); };

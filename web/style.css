@@ -218,3 +218,9 @@ form.box { margin: 0; }
 .bdui .seg { flex-wrap: wrap; align-self: flex-start; }
 .bdui .bdgx { margin-top: 4px; min-height: 20px; }
 .bdui img.cd { height: auto; width: 100%; max-width: 420px; }
+.ac { position: relative; }
+.ac ul { position: absolute; z-index: 10; left: 0; right: 0; top: calc(100% + 2px); margin: 0; padding: 0; list-style: none; background: var(--bg); border: 1px solid var(--line2); }
+.ac li { display: flex; align-items: center; gap: 8px; padding: 7px 10px; cursor: pointer; font-size: 13px; }
+.ac li:hover { background: var(--sunken); }
+.ac li img { width: 20px; height: 20px; }
+.ac li span { margin-left: auto; color: var(--faint); font-size: 11.5px; }
