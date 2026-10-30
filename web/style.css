@@ -211,5 +211,5 @@ form.box { margin: 0; }
 @media (max-width: 640px) { .tmg { aspect-ratio: 1 / 1; } .tmg b { font-size: 15px; } }
 .trio { display: flex; gap: 28px; flex-wrap: wrap; margin-bottom: 14px; }
 .trio b { display: block; font: 620 24px/1.1 Archivo, sans-serif; font-stretch: 112%; color: var(--strong); }
-.trio span { font-size: 12px; color: var(--muted); }
+.trio > div > span { font-size: 12px; color: var(--muted); }
 .feed.rlf li { grid-template-columns: 72px 1fr auto; }
