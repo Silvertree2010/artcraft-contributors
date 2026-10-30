@@ -37,6 +37,7 @@ async function gh(u, h = hd) {
 const db = rj('db.json', { a: {}, p: {}, u: {}, r: [], ca: {}, c: {} });
 db.a ||= {}; db.p ||= {}; db.u ||= {}; db.r ||= []; db.ca ||= {}; db.c ||= {}; db.pm ||= []; db.dl ||= {}; db.dh ||= {}; db.rv ||= {}; db.is ||= {}; db.ia ||= {}; db.st ||= {}; db.ci ||= {}; db.rh ||= {}; db.ks ||= [];
 db.dc ||= { d: {}, u: {}, ch: {}, h: Array.from({ length: 7 }, () => new Array(24).fill(0)), z: 0, zi: [], gp: [[1793201367, 1793367449]], on: 1, f: 0 };
+if (db.iv !== 2) { for (const s of Object.values(db.ia)) { s.cur = null; s.start = null; s.aft = null; } db.iv = 2; }
 if (db.v !== 3) { for (const s of Object.values(db.a)) { s.cur = null; s.start = null; s.aft = null; } db.v = 3; }
 let dirty = 0, rt = 0, err = null;
 const sec = (t) => (t ? Math.round(Date.parse(t) / 1000) : 0);
@@ -204,7 +205,8 @@ async function sync() {
 }
 
 const BK = (ls) => ls.some((l) => /bug|crash|regress|broken|defect/i.test(l)) ? 'b' : ls.some((l) => /feature|enhancement|request|idea|proposal/i.test(l)) ? 'f' : '';
-const IQ = `query($o:String!,$r:String!,$a:String){repository(owner:$o,name:$r){issues(first:100,after:$a,orderBy:{field:UPDATED_AT,direction:DESC}){pageInfo{hasNextPage endCursor}nodes{number createdAt closedAt updatedAt stateReason author{__typename login} labels(first:10){nodes{name}} comments(first:6){nodes{createdAt author{__typename login}}}}}}}`;
+const TCK = (t) => /\b(bug|crash\w*|errors?|fail\w*|broken|freez\w*|hangs?|not working|doesn'?t|does not|can'?t|cannot|won'?t|wrong|incorrect|regression|glitch\w*|missing|unable|issues?|problems?|exception|panic|slow|lag\w*|disappear\w*|stuck|corrupt\w*|bad|not \w+|dont|doesnt|illegible|cursed|unreadable|blank|garbled|misaligned|overlap\w*)\b/i.test(t) ? 'b' : /^\s*\[?(question|help|how)\b|\?\s*$/i.test(t) ? 'q' : /^[A-Z][\w /&+-]{1,40}:\s/.test(t) ? 't' : /\b(feature|request|add\w*|support\w*|please|would be nice|suggest\w*|idea|implement\w*|allow\w*|option|ability|enhance\w*|improve\w*|proposal|new|integrat\w*|want|wish|could you|make it|requests?|consider|distribute|change|move|let|enable|export|import|sign\w*|via|mode|dark|shortcut\w*|tool|plugin|feature)\b/i.test(t) ? 'f' : '';
+const IQ = `query($o:String!,$r:String!,$a:String){repository(owner:$o,name:$r){issues(first:100,after:$a,orderBy:{field:UPDATED_AT,direction:DESC}){pageInfo{hasNextPage endCursor}nodes{number title createdAt closedAt updatedAt stateReason author{__typename login} labels(first:10){nodes{name}} comments(first:6){nodes{createdAt author{__typename login}}}}}}}`;
 async function isync() {
   let n = 0;
   for (const { n: rn } of db.r) {
@@ -221,7 +223,7 @@ async function isync() {
         if (!q.author) continue;
         const a = q.author.__typename === 'Bot' && !/\[bot\]$/.test(q.author.login) ? q.author.login + '[bot]' : q.author.login;
         const fc = q.comments.nodes.find((c) => c.author && c.author.login !== q.author.login && c.author.__typename !== 'Bot');
-        ii[q.number] = [a, sec(q.createdAt), sec(q.closedAt), BK(q.labels.nodes.map((l) => l.name)), fc ? sec(fc.createdAt) : 0, q.stateReason === 'NOT_PLANNED' ? 2 : q.stateReason === 'COMPLETED' ? 1 : 0];
+        ii[q.number] = [a, sec(q.createdAt), sec(q.closedAt), BK(q.labels.nodes.map((l) => l.name)) || TCK(q.title || ''), fc ? sec(fc.createdAt) : 0, q.stateReason === 'NOT_PLANNED' ? 2 : q.stateReason === 'COMPLETED' ? 1 : 0];
       }
       dirty = 1;
       const ls = is.nodes[is.nodes.length - 1];
@@ -487,13 +489,13 @@ function build() {
     }
   }
   const io = new Map();
-  let iop = 0, i30 = 0, x30 = 0, np30 = 0, ib = 0, ifr = 0; const ifs = [], irs = {};
+  let iop = 0, i30 = 0, x30 = 0, np30 = 0, ib = 0, ifr = 0, iq = 0, it2 = 0; const ifs = [], irs = {};
   for (const r of db.r) {
     const ii = db.is[r.n]; if (!ii) continue;
-    const z = (irs[r.n] = { o: 0, b: 0, f: 0, o30: 0, x30: 0, fr: [] });
+    const z = (irs[r.n] = { o: 0, b: 0, f: 0, q: 0, o30: 0, x30: 0, fr: [] });
     for (const [a, c, x, k, fr, rsn] of Object.values(ii)) {
       if (!bot(a)) io.set(a, (io.get(a) || 0) + 1);
-      if (!x) { iop++; z.o++; if (k === 'b') { ib++; z.b++; } else if (k === 'f') { ifr++; z.f++; } }
+      if (!x) { iop++; z.o++; if (k === 'b') { ib++; z.b++; } else if (k === 'f') { ifr++; z.f++; } else if (k === 'q') { iq++; z.q++; } else if (k === 't') { it2++; z.t = (z.t || 0) + 1; } }
       if (now - c < 30 * 86400) { i30++; z.o30++; if (fr) { ifs.push(fr - c); z.fr.push(fr - c); } }
       if (x && now - x < 30 * 86400) { x30++; z.x30++; if (rsn === 2) np30++; }
     }
@@ -523,7 +525,7 @@ function build() {
   S = {
     at: Math.round(now), sync: !db.r.length ? 1 : db.r.filter((r) => !db.a[r.n] || !db.a[r.n].cur || !db.ca[r.n] || !db.ca[r.n].cur).length, err,
     k: { c: ppl.size, m: tm, o: op, cm: tc, m1, m7, t: med(t30), n30, pr: all.length && rp.reduce((s, r) => s + r.o, 0), n7: nw7, c7: c7t, fr: med(frt), st: db.r.reduce((a, r) => a + (r.s || 0), 0), fk: db.r.reduce((a, r) => a + (r.f || 0), 0), s7: s90.slice(-7).reduce((a, b) => a + b, 0), rv: [...rvp.values()].reduce((a, v) => a + v[0], 0), rv7: [...rvp.values()].reduce((a, v) => a + v[2], 0) },
-    is: { o: iop, o30: i30, x30, np30, b: ib, f: ifr, fr: med(ifs), sy: db.r.filter((r) => !db.ia[r.n] || !db.ia[r.n].cur).length },
+    is: { o: iop, o30: i30, x30, np30, b: ib, f: ifr, q: iq, t: it2, fr: med(ifs), sy: db.r.filter((r) => !db.ia[r.n] || !db.ia[r.n].cur).length },
     st: { wk: swk, d: s90, t: stt, sy: db.r.filter((r) => !db.st[r.n] || !db.st[r.n].top).length },
     dd: Object.entries(dpd).map(([d, v]) => [+d, v]).sort((a, b) => a[0] - b[0]).slice(-120),
     rvl: rvl.slice(0, 50), dc,

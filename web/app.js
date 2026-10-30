@@ -350,7 +350,7 @@ function donut(it, o = {}) {
   const T = it.reduce((a, x) => a + x[1], 0) || 1;
   let a = -Math.PI / 2, g = '';
   for (const [l, v, c] of it) { const b = a + v / T * Math.PI * 2; g += `<path d="${arc(70, 70, 66, 44, a + .012, b - .012)}" fill="${c}" data-t="${esc(`<b>${esc(l)}</b><br>${N(v)}, ${pct(v, T)}`)}"/>`; a = b; }
-  return `<div class="dn"><div class="dn-c"><svg viewBox="0 0 140 140">${g}</svg><div class="dn-m"><b>${o.c ?? big(T)}</b><span>${o.s || ''}</span></div></div><ul>${it.slice(0, o.n || 6).map(([l, v, c]) => `<li><i style="background:${c}"></i><span>${esc(l)}</span><b>${pct(v, T)}</b></li>`).join('')}</ul></div>`;
+  return `<div class="dn"><div class="dn-c"><svg viewBox="0 0 140 140">${g}</svg><div class="dn-m"><b>${o.c ?? big(T)}</b><span>${o.s || ''}</span></div></div><ul class="${Math.min(it.length, o.n || 6) > 7 ? 'two' : ''}">${it.slice(0, o.n || 6).map(([l, v, c]) => `<li><i style="background:${c}"></i><span>${esc(l)}</span><b>${pct(v, T)}</b></li>`).join('')}</ul></div>`;
 }
 function clock(A, Bv, la, lb) {
   const sh = Math.round(-new Date().getTimezoneOffset() / 60), loc = (M) => { const r = new Array(24).fill(0); M.forEach((row) => row.forEach((v, h) => { r[(((h + sh) % 24) + 24) % 24] += v; })); return r; };
@@ -399,7 +399,7 @@ function overview() {
   const k = S.k, D = S.days.slice(-30), sm = (i) => D.map((d) => d[i]), mg = D.map((d) => d[3].reduce((a, b) => a + b, 0));
   let cc = S.pre; const cum = S.days.map((d) => (cc += d[5])).slice(-30);
   const m30 = {}; S.days.slice(-30).forEach((d) => d[3].forEach((v, i) => { if (v) m30[S.rs[i].n] = (m30[S.rs[i].n] || 0) + v; }));
-  const ae = Object.entries(m30).sort((a, b) => b[1] - a[1]), at = ae.slice(0, 7).map(([n, v]) => [ap(n)[0], v, col(n)]), ao = ae.slice(7).reduce((a, x) => a + x[1], 0);
+  const ae = Object.entries(m30).sort((a, b) => b[1] - a[1]), at = ae.slice(0, 12).map(([n, v]) => [ap(n)[0], v, col(n)]), ao = ae.slice(12).reduce((a, x) => a + x[1], 0);
   if (ao) at.push(['Other', ao, 'var(--line2)']);
   const P = {}; let DT = 0; for (const x of S.dl || []) { DT += x.t; for (const kk in x.p) P[kk] = (P[kk] || 0) + x.p[kk]; }
   const i = S.is, dc = S.dc;
@@ -415,7 +415,7 @@ function overview() {
   </div>
   <section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Merged per day</h2></div><div id="daily">${daily()}</div>${legend()}</section>
   <div class="grid g3">
-    <section class="box"><div class="box-h"><h2>Where work lands</h2><span class="sub">Merged, 30 days</span></div>${donut(at, { s: 'merged' })}</section>
+    <section class="box"><div class="box-h"><h2>Where work lands</h2><span class="sub">Merged, 30 days</span></div>${donut(at, { s: 'merged', n: 13 })}</section>
     <section class="box"><div class="box-h"><h2>Downloads</h2><span class="sub">By platform</span></div>${donut(PL.filter(([kk]) => P[kk]).map(([kk, n, c]) => [n, P[kk], c]), { c: big(DT), s: 'downloads' })}</section>
     <section class="box"><div class="box-h"><h2>Around the clock</h2></div>${clock(S.heat, dc && dc.h, 'merged PRs', 'Discord messages')}</section>
   </div>
@@ -427,7 +427,7 @@ function overview() {
   <div class="grid g3">
     <section class="box"><div class="box-h"><h2>Contributors</h2><span class="sub"><span style="color:var(--accent-ink)">Total</span>, active per day</span></div>${growth()}</section>
     <section class="box"><div class="box-h"><h2>Time to merge</h2><span class="sub">Median ${du(k.t)}</span></div>${hist()}</section>
-    <section class="box"><div class="box-h"><h2>Open issues</h2>${i.sy ? '<span class="sub">Syncing</span>' : `<span class="sub">First reply ${du(i.fr)}</span>`}</div>${donut([['Bugs', i.b, 'var(--bad)'], ['Features', i.f, 'var(--accent)'], ['Other', i.o - i.b - i.f, 'var(--line2)']], { c: big(i.o), s: 'open' })}<p class="note" style="margin:10px 0 0">${N(i.o30)} opened and ${N(i.x30)} closed in 30 days.</p></section>
+    <section class="box"><div class="box-h"><h2>Open issues</h2>${i.sy ? '<span class="sub">Syncing</span>' : `<span class="sub">First reply ${du(i.fr)}</span>`}</div>${donut([['Bugs', i.b, 'var(--bad)'], ['Features', i.f, 'var(--accent)'], ['Roadmap', i.t || 0, 'var(--good)'], ['Questions', i.q || 0, '#8b5cf6'], ['Other', i.o - i.b - i.f - (i.q || 0) - (i.t || 0), 'var(--line2)']], { c: big(i.o), s: 'open' })}<p class="note" style="margin:10px 0 0">${N(i.o30)} opened and ${N(i.x30)} closed in 30 days.</p></section>
   </div>
   <div class="grid g32">
     ${dc ? dcs() : '<div></div>'}
@@ -555,7 +555,7 @@ function prof(d, l, mine) {
   ${d.prs.length ? `<section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Per day</h2><span class="sub"><span style="color:var(--accent-ink)">Merged</span> and opened</span></div>${weekly(d.prs)}</section>` : ''}
   <div class="grid g32">
     <section class="box"><div class="box-h"><h2>Pull requests</h2><span class="sub">${N(d.prs.length)}</span></div>${d.prs.length ? '' : '<p class="empty">None.</p>'}<ul class="feed">${d.prs.slice(0, lp).map((p) => `<li><img src="${ico(p[0])}" alt="${esc(ap(p[0])[0])}" title="${esc(ap(p[0])[0])}"><span class="t"><a href="${esc(gu(p[0]))}/pull/${p[1]}" target="_blank" rel="noopener">${esc(p[5])}</a><br><span class="m">${esc(ap(p[0])[0])} #${p[1]}, ${dt(p[2], 1)}${p[3] ? `, merged in ${du(p[3] - p[2])}` : ''}</span></span>${stat(p)}</li>`).join('')}</ul>${d.prs.length > lp ? `<a class="btn more" target="_blank" rel="noopener" href="https://github.com/pulls?q=${encodeURIComponent(`is:pr author:${l} org:storytold${S.rs.filter((x) => x.x).map((x) => ` repo:${x.w}/${x.n}`).join('')}`)}">All on GitHub</a>` : ''}</section>
-    <section class="box"><div class="box-h"><h2>Apps</h2><span class="sub">By commits</span></div>${ab.length ? (() => { const a = ab.slice(0, 7).map(([n, [m, c2]]) => [ap(n)[0], c2 || m, col(n)]), o = ab.slice(7).reduce((x, y) => x + (y[1][1] || y[1][0]), 0); if (o) a.push(['Other', o, 'var(--line2)']); return donut(a, { s: 'commits', n: 8 }); })() : '<p class="empty">Nothing yet.</p>'}</section>
+    <section class="box"><div class="box-h"><h2>Apps</h2><span class="sub">By commits</span></div>${ab.length ? (() => { const a = ab.slice(0, 10).map(([n, [m, c2]]) => [ap(n)[0], c2 || m, col(n)]), o = ab.slice(10).reduce((x, y) => x + (y[1][1] || y[1][0]), 0); if (o) a.push(['Other', o, 'var(--line2)']); return donut(a, { s: 'commits', n: 11 }); })() : '<p class="empty">Nothing yet.</p>'}</section>
   </div>
   <div class="grid g2">
     <form class="box" id="vs" data-a="${esc(r[0])}"><div class="box-h"><h2>Compare</h2></div><div style="display:flex;gap:8px;flex-wrap:wrap"><input class="srch" id="vsq" placeholder="Other GitHub user" autocomplete="off" list="vsl"><datalist id="vsl">${S ? S.lead.slice(0, 200).map((x) => `<option value="${esc(x[0])}">`).join('') : ''}</datalist><button class="btn">Compare</button></div></form>
@@ -641,7 +641,7 @@ function apage(d) {
   <section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Per day</h2><span class="sub"><span style="color:${ink(n)}">Merged</span>, commits as line</span></div>${dual(ti, c)}</section>
   <div class="grid g3">
     <section class="box"><div class="box-h"><h2>Downloads</h2><span class="sub">By platform</span></div>${d.dl ? donut(PL.filter(([k]) => d.dl.p[k]).map(([k, nm, cc]) => [nm, d.dl.p[k], cc]), { c: big(d.dl.t), s: 'downloads' }) : '<p class="empty">No releases.</p>'}</section>
-    <section class="box"><div class="box-h"><h2>Open issues</h2>${i ? `<span class="sub">First reply ${du(i.fr)}</span>` : ''}</div>${i ? donut([['Bugs', i.b, 'var(--bad)'], ['Features', i.f, 'var(--accent)'], ['Other', i.o - i.b - i.f, 'var(--line2)']], { c: big(i.o), s: 'open' }) + `<p class="note" style="margin:10px 0 0">${N(i.o30)} opened, ${N(i.x30)} closed in 30 days.</p>` : '<p class="empty">Still syncing.</p>'}</section>
+    <section class="box"><div class="box-h"><h2>Open issues</h2>${i ? `<span class="sub">First reply ${du(i.fr)}</span>` : ''}</div>${i ? donut([['Bugs', i.b, 'var(--bad)'], ['Features', i.f, 'var(--accent)'], ['Roadmap', i.t || 0, 'var(--good)'], ['Questions', i.q || 0, '#8b5cf6'], ['Other', i.o - i.b - i.f - (i.q || 0) - (i.t || 0), 'var(--line2)']], { c: big(i.o), s: 'open' }) + `<p class="note" style="margin:10px 0 0">${N(i.o30)} opened, ${N(i.x30)} closed in 30 days.</p>` : '<p class="empty">Still syncing.</p>'}</section>
     <section class="box"><div class="box-h"><h2>CI on main</h2><span class="sub">14 days</span></div>${ci && ci.n ? donut([['Passed', ci.ok, 'var(--good)'], ['Failed', ci.n - ci.ok, 'var(--bad)']], { c: pc0(ci.ok / ci.n), s: `${N(ci.n)} runs` }) + `<p class="note" style="margin:10px 0 0">Median run ${du(ci.med)}.${ci.wf.filter(([, [o, f]]) => f).length ? ' Failing most: ' + esc(ci.wf.slice().sort((a, b) => b[1][1] - a[1][1])[0][0]) + '.' : ''}</p>` : '<p class="empty">No runs.</p>'}</section>
   </div>
   <div class="grid g32">
@@ -704,7 +704,7 @@ function wpage(d) {
     <section class="box"><div class="box-h"><h2>Most reviews</h2></div>${pl(d.rv, '')}</section>
   </div>
   <div class="grid g2">
-    <section class="box"><div class="box-h"><h2>Busiest apps</h2><span class="sub">Merged PRs</span></div>${(() => { const a = d.apps.slice(0, 7).map(([n, v]) => [ap(n)[0], v, col(n)]), o = d.apps.slice(7).reduce((x, y) => x + y[1], 0); if (o) a.push(['Other', o, 'var(--line2)']); return donut(a, { s: 'merged', n: 8 }); })()}</section>
+    <section class="box"><div class="box-h"><h2>Busiest apps</h2><span class="sub">Merged PRs</span></div>${(() => { const a = d.apps.slice(0, 12).map(([n, v]) => [ap(n)[0], v, col(n)]), o = d.apps.slice(12).reduce((x, y) => x + y[1], 0); if (o) a.push(['Other', o, 'var(--line2)']); return donut(a, { s: 'merged', n: 13 }); })()}</section>
     <section class="box"><div class="box-h"><h2>Releases</h2><a class="sub" href="#/releases">All</a></div>${d.rl.length ? `<ul class="feed">${d.rl.slice(0, 7).map((x) => `<li><img src="${ico(x[0])}" alt=""><span class="t"><a href="${esc(gu(x[0]))}/releases/tag/${encodeURIComponent(x[1])}" target="_blank" rel="noopener">${esc(ap(x[0])[0])} ${esc(x[1])}</a><br><span class="m">${N(x[3])} downloads</span></span><span class="m">${ago(x[2])}</span></li>`).join('')}</ul>` : '<p class="empty">No releases this week.</p>'}</section>
   </div>`;
 }
