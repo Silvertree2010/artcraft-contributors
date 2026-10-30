@@ -674,15 +674,52 @@ function feedx(s) {
   s.end(x);
 }
 const tw = (t) => Math.round([...t].reduce((a, c) => a + (/[il.,:'|!]/.test(c) ? 3.2 : /[mwMW]/.test(c) ? 9.5 : /[A-Z0-9#]/.test(c) ? 7.2 : 6.1), 0)) + 10;
-function badge(s, p) {
+const CL = { photocraft: '#2f7bf5', vectorcraft: '#e8573f', filmcraft: '#8b5cf6', lightcraft: '#f2a516', pdfcraft: '#12a58a', effectcraft: '#e0368f', designcraft: '#7bb51c', figcraft: '#02da96', wordcraft: '#3f5fe0', soundcraft: '#1fa5c9', deckcraft: '#f07a1e', cadcraft: '#3ea6e8', gridcraft: '#1f9d55', solidcraft: '#46a1fb', artcraft: '#4e7bfb', anicraft: '#c25bd6' };
+const BS = { dark: ['#101014', '#2d81ff', '#fff', '#fff'], light: ['#e9e8e4', '#101014', '#101014', '#fff'], blue: ['#1659c4', '#2d81ff', '#fff', '#fff'], mono: ['#101014', '#3a3a40', '#fff', '#fff'] };
+const kfm = (v) => v >= 1e6 ? (v / 1e6).toFixed(1) + 'M' : v >= 1e4 ? Math.round(v / 1e3) + 'k' : nfm.format(v);
+function ustrk(l) {
+  const ua = UA.get(l.toLowerCase()) || {}, ds = Object.keys(ua).map(Number).filter((d) => ua[d].some((v) => v)).sort((a, b) => a - b);
+  let lg = 0, run = 0, pv = null;
+  for (const d of ds) { run = pv !== null && d === pv + 1 ? run + 1 : 1; lg = Math.max(lg, run); pv = d; }
+  return { cu: pv !== null && pv >= Math.floor(Date.now() / DY) - 1 ? run : 0, lg };
+}
+function svgo(s, x) { s.writeHead(200, { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'max-age=1800' }); s.end(x); }
+function badge(s, p, q) {
+  const st = BS[q.get('s')] || BS.dark, mt = q.get('m') || '';
+  const c = /^\/badge\/card\/([^/]+?)\.svg$/.exec(p);
+  if (c && S) return card(s, decodeURIComponent(c[1]), st);
   let m = /^\/badge\/(u|app)\/([^/]+?)\.svg$/.exec(p), L = 'ArtCraft', V = null;
-  if (m && S && m[1] === 'u') { const l = decodeURIComponent(m[2]).toLowerCase(), i = S.lead.findIndex((r) => r[0].toLowerCase() === l); if (i >= 0) V = `#${i + 1} · ${nfm.format(S.lead[i][2])} merged`; }
-  if (m && S && m[1] === 'app') { const n = decodeURIComponent(m[2]).toLowerCase(), d = S.dl.find((x) => x.n.toLowerCase() === n); if (d) { L = AN(d.n); V = `${d.t >= 1e6 ? (d.t / 1e6).toFixed(1) + 'M' : d.t >= 1e3 ? Math.round(d.t / 1e3) + 'k' : d.t} downloads`; } }
+  if (m && S && m[1] === 'u') {
+    const l = decodeURIComponent(m[2]).toLowerCase(), i = S.lead.findIndex((r) => r[0].toLowerCase() === l);
+    if (i >= 0) { const r = S.lead[i], k = ustrk(l);
+      V = { merged: `${nfm.format(r[2])} merged PRs`, commits: `${nfm.format(r[12])} commits`, reviews: `${nfm.format(r[20] || 0)} reviews`, apps: `${r[7]} Craft apps`, streak: `${k.cu}-day streak`, rank: `rank #${i + 1} of ${nfm.format(S.lead.length)}` }[mt] || `#${i + 1} · ${nfm.format(r[2])} merged`; }
+  }
+  if (m && S && m[1] === 'app') {
+    const n = decodeURIComponent(m[2]).toLowerCase(), r = S.rs.find((x) => x.n.toLowerCase() === n);
+    if (r) { L = AN(r.n);
+      V = { stars: `${kfm(r.s)} stars`, contributors: `${nfm.format(r.c)} contributors`, merged: `${kfm(r.m)} merged PRs`, commits: `${kfm(r.cm)} commits`, ci: r.ci && r.ci.n ? `CI ${Math.round(r.ci.ok / r.ci.n * 100)}%` : null }[mt] || (r.dl ? `${kfm(r.dl)} downloads` : null); }
+  }
   if (!V) return no(s);
   const a = tw(L), b = tw(V);
-  const x = `<svg xmlns="http://www.w3.org/2000/svg" width="${a + b}" height="20" role="img" aria-label="${xe(L)}: ${xe(V)}"><title>${xe(L)}: ${xe(V)}</title><rect width="${a}" height="20" fill="#101014"/><rect x="${a}" width="${b}" height="20" fill="#2d81ff"/><g fill="#fff" font-family="Verdana,DejaVu Sans,sans-serif" font-size="11"><text x="6" y="14">${xe(L)}</text><text x="${a + 6}" y="14">${xe(V)}</text></g></svg>`;
-  s.writeHead(200, { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'max-age=1800' });
-  s.end(x);
+  svgo(s, `<svg xmlns="http://www.w3.org/2000/svg" width="${a + b}" height="20" role="img" aria-label="${xe(L)}: ${xe(V)}"><title>${xe(L)}: ${xe(V)}</title><rect width="${a}" height="20" fill="${st[0]}"/><rect x="${a}" width="${b}" height="20" fill="${st[1]}"/><g font-family="Verdana,DejaVu Sans,sans-serif" font-size="11"><text x="6" y="14" fill="${st[2]}">${xe(L)}</text><text x="${a + 6}" y="14" fill="${st[3]}">${xe(V)}</text></g></svg>`);
+}
+function card(s, l, st) {
+  const i = S.lead.findIndex((r) => r[0].toLowerCase() === l.toLowerCase());
+  if (i < 0) return no(s);
+  const r = S.lead[i], k = ustrk(r[0]), cm = (C.get(r[0].toLowerCase()) || []).filter(([n]) => CL[n.toLowerCase()]).slice(0, 6), ct = cm.reduce((a, x) => a + x[1], 0) || 1;
+  const lt = st === BS.light, bg = lt ? '#f2f1ee' : '#121316', fg = lt ? '#101014' : '#f2f1ee', mu = lt ? 'rgba(16,16,20,.6)' : 'rgba(242,241,238,.6)', ln = lt ? 'rgba(16,16,20,.16)' : 'rgba(242,241,238,.15)', ac = st === BS.mono ? fg : '#2d81ff';
+  const S2 = [['Rank', `#${i + 1}`], ['Merged', nfm.format(r[2])], ['Commits', kfm(r[12])], ['Reviews', kfm(r[20] || 0)], ['Streak', `${k.cu}d`]];
+  let x = 20, bars = '';
+  for (const [n, v] of cm) { const w = 380 * v / ct; bars += `<rect x="${x}" y="112" width="${Math.max(1, w - 2)}" height="6" fill="${CL[n.toLowerCase()]}"><title>${xe(AN(n))}: ${v}</title></rect>`; x += w; }
+  const sv = `<svg xmlns="http://www.w3.org/2000/svg" width="420" height="140" viewBox="0 0 420 140" role="img" aria-label="${xe(r[0])} on ArtCraft"><title>${xe(r[0])}: rank ${i + 1}, ${r[2]} merged PRs</title>
+<rect width="420" height="140" fill="${bg}"/><rect x=".5" y=".5" width="419" height="139" fill="none" stroke="${ln}"/>
+<g font-family="Verdana,DejaVu Sans,sans-serif">
+<text x="20" y="32" font-size="16" font-weight="bold" fill="${fg}">${xe(r[0])}</text>
+<text x="400" y="32" font-size="10" fill="${mu}" text-anchor="end" letter-spacing="1">ARTCRAFT CONTRIBUTIONS</text>
+${S2.map(([t, v], j) => `<text x="${20 + j * 78}" y="62" font-size="9" fill="${mu}" letter-spacing="1">${t.toUpperCase()}</text><text x="${20 + j * 78}" y="86" font-size="18" font-weight="bold" fill="${j ? fg : ac}">${xe(v)}</text>`).join('')}
+${bars}<text x="20" y="133" font-size="9" fill="${mu}">${xe(cm.slice(0, 3).map(([n]) => AN(n)).join(', '))}${cm.length > 3 ? ' and more' : ''}</text>
+</g></svg>`;
+  svgo(s, sv);
 }
 let IX = null;
 function ogh(p) {
@@ -735,7 +772,7 @@ http.createServer(async (q, s) => {
     if (p === '/api/releases') return S ? js(q, s, { rl: rels() }, 'no-cache') : no(s, 503, 'warming up');
     if (p === '/api/week') return S ? js(q, s, week(), 'no-cache') : no(s, 503, 'warming up');
     if (p === '/feed.xml') return S ? feedx(s) : no(s, 503, 'warming up');
-    if (p.startsWith('/badge/')) return badge(s, p);
+    if (p.startsWith('/badge/')) return badge(s, p, u.searchParams);
     const og = /^\/(u|app|vs|releases|week|people)(\/|$)/.test(p) && ogh(p);
     if (og) { s.writeHead(200, { ...SH, 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' }); return s.end(og);
     }

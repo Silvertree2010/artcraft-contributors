@@ -214,3 +214,7 @@ form.box { margin: 0; }
 .trio > div > span { font-size: 12px; color: var(--muted); }
 .feed.rlf li { grid-template-columns: 72px 1fr auto; }
 .bdgx { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; } .bdgx img { height: 20px; }
+.bdui { display: flex; flex-direction: column; gap: 10px; }
+.bdui .seg { flex-wrap: wrap; align-self: flex-start; }
+.bdui .bdgx { margin-top: 4px; min-height: 20px; }
+.bdui img.cd { height: auto; width: 100%; max-width: 420px; }

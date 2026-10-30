@@ -418,6 +418,21 @@ function cal(ua) {
   }
   return `<div class="tw"><svg class="ch cal" viewBox="0 0 ${W} ${H}" style="max-width:${W * 1.7}px">${g}</svg></div>`;
 }
+const BM = { u: [['', 'Rank + merged'], ['merged', 'Merged'], ['commits', 'Commits'], ['reviews', 'Reviews'], ['streak', 'Streak'], ['apps', 'Apps'], ['card', 'Card']], app: [['', 'Downloads'], ['stars', 'Stars'], ['contributors', 'Contributors'], ['merged', 'Merged'], ['commits', 'Commits'], ['ci', 'CI']] };
+function bdui(k, id) {
+  return `<div class="bdui" data-k="${k}" data-id="${esc(id)}" data-m="" data-s="dark">
+    <div class="seg bm">${BM[k].map(([v, t]) => `<button data-m="${v}" class="${v ? '' : 'on'}">${t}</button>`).join('')}</div>
+    <div class="seg bs">${['dark', 'light', 'blue', 'mono'].map((v) => `<button data-s="${v}" class="${v === 'dark' ? 'on' : ''}">${v}</button>`).join('')}</div>
+    <div class="bdgx"><img alt=""><button class="btn" data-cp="">Copy Markdown</button></div></div>`;
+}
+function bdset(el) {
+  const { k, id, m, s: st } = el.dataset, o = location.origin;
+  const src = m === 'card' ? `${o}/badge/card/${encodeURIComponent(id)}.svg${st !== 'dark' ? `?s=${st}` : ''}` : `${o}/badge/${k}/${encodeURIComponent(id)}.svg${[m && `m=${m}`, st !== 'dark' && `s=${st}`].filter(Boolean).map((x, i) => (i ? '&' : '?') + x).join('')}`;
+  const ln = `${o}/${k === 'u' ? 'u' : 'app'}/${encodeURIComponent(id)}`;
+  el.querySelector('img').src = src;
+  el.querySelector('[data-cp]').dataset.cp = `[![${k === 'u' ? 'ArtCraft contributions' : ap(id)[0]}](${src})](${ln})`;
+  el.querySelector('img').className = m === 'card' ? 'cd' : '';
+}
 function bdg(r, sk) {
   const b = [], ms = (v, l, t) => { const h = [...l].reverse().find((x) => v >= x); if (h) b.push([`${N(h)}+ ${t}`, `${N(v)} ${t}`]); };
   ms(r[2], [1, 10, 50, 100, 250, 500, 1000], 'merged');
@@ -453,7 +468,7 @@ function prof(d, l, mine) {
   </div>
   <div class="grid g2">
     <form class="box" id="vs" data-a="${esc(r[0])}"><div class="box-h"><h2>Compare</h2></div><div style="display:flex;gap:8px;flex-wrap:wrap"><input class="srch" id="vsq" placeholder="Other GitHub user" autocomplete="off" list="vsl"><datalist id="vsl">${S ? S.lead.slice(0, 200).map((x) => `<option value="${esc(x[0])}">`).join('') : ''}</datalist><button class="btn">Compare</button></div></form>
-    <section class="box"><div class="box-h"><h2>README badge</h2></div><div class="bdgx"><img src="${esc(bu)}" alt=""><button class="btn" data-cp="${esc(md)}">Copy Markdown</button></div></section>
+    <section class="box"><div class="box-h"><h2>README badge</h2></div>${bdui('u', r[0])}</section>
   </div>`;
 }
 
@@ -543,7 +558,7 @@ function apage(d) {
     <section class="box"><div class="box-h"><h2>Releases</h2><a class="sub" href="#/releases">All ${N(d.rl.length)}</a></div><ul class="feed rlf">${rl.map((x) => `<li><span class="st n">${esc(x[0].replace(/^[a-z-]*v(?=\d)/i, 'v'))}</span><span class="t"><a href="${esc(gu(n))}/releases/tag/${encodeURIComponent(x[0])}" target="_blank" rel="noopener">${N(x[2])} downloads</a><br><span class="m">${x[4] ? `${x[4]} changes` : ''}</span></span><span class="m">${ago(x[1])}</span></li>`).join('') || '<li class="dim">None</li>'}</ul></section>
   </div>
   ${d.st ? `<section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Stars</h2><span class="sub">${N(d.s)}</span></div>${lch(d.swk, { u: 'stars', W: 900, H: 160 })}</section>` : ''}
-  <div class="bdgx"><img src="${esc(location.origin + '/badge/app/' + n + '.svg')}" alt=""><button class="btn" data-cp="${esc(md)}">Copy Markdown</button></div>`;
+  <section class="box"><div class="box-h"><h2>README badge</h2></div>${bdui('app', n)}</section>`;
 }
 function dual(D, c) {
   const W = 900, H = 190, L = 34, B = 22, T = 6, n = D.length || 1, bw = (W - L) / n, st = Math.max(1, Math.round(n / 7));
@@ -615,6 +630,10 @@ function bind() {
   const qi = $('#q');
   if (qi) qi.oninput = () => { q = qi.value.trim().toLowerCase(); lim = 50; relead(); };
   m.querySelectorAll('tr[data-go]').forEach((r) => r.onclick = (e) => { if (!e.target.closest('a')) location.hash = r.dataset.go; });
+  m.querySelectorAll('.bdui').forEach((el) => {
+    bdset(el);
+    el.onclick = (e) => { const b = e.target.closest('button[data-m],button[data-s]'); if (!b) return; const g = b.dataset.m != null ? 'm' : 's'; el.dataset[g] = b.dataset[g]; b.parentNode.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b)); bdset(el); };
+  });
   const tk = $('#tmk');
   if (tk) tk.onclick = (e) => { const kk = e.target.dataset.k; if (!kk) return; tmk = kk; tk.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.k === kk)); $('#tmap').innerHTML = tmap(); };
   const vs = $('#vs');
