@@ -341,10 +341,8 @@ function overview() {
   </div>
   ${team()}
   ${qual()}
-  <div class="grid g2">
-    <section class="box"><div class="box-h"><h2>Apps</h2></div>${apps()}</section>
-    <section class="box"><div class="box-h"><h2>Latest merges</h2></div>${feed()}</section>
-  </div>`;
+  <section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Apps</h2></div>${apps()}</section>
+  <section class="box"><div class="box-h"><h2>Latest merges</h2></div>${feed()}</section>`;
 }
 
 function people() {

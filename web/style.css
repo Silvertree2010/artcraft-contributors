@@ -180,3 +180,5 @@ form.box { margin: 0; }
 @media (max-width: 640px) { .mini { grid-template-columns: repeat(2, 1fr); } .mini > div { border-left: 0 !important; border-top: 1px solid var(--line) !important; } .mini > div:nth-child(2n) { border-left: 1px solid var(--line) !important; } .mini > div:nth-child(-n+2) { border-top: 0 !important; } }
 .nav a { white-space: nowrap; }
 @media (max-width: 640px) { .nav { overflow-x: auto; scrollbar-width: none; } .nav::-webkit-scrollbar { display: none; } .nav a { padding: 6px 8px; } }
+.tw { overflow-x: auto; }
+.box { min-width: 0; }
