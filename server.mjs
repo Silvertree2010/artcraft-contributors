@@ -81,6 +81,7 @@ const pf = (a) => {
   return [p, r, f];
 };
 let dt0 = 0;
+const sk0 = (k) => /^(__proto__|constructor|prototype)$/.test(k) ? '_' + k : k;
 async function dl() {
   const out = {}, td = Math.floor(Date.now() / DY) * 86400;
   for (const r of db.r) {
@@ -98,7 +99,7 @@ async function dl() {
         }
         o.rl.push([R.tag_name, sec(R.published_at), rt, R.prerelease ? 1 : 0, (R.body || '').split('\n').filter((l) => /^\s*[-*]\s/.test(l)).length]);
         const ag = Date.now() / 1000 - sec(R.published_at);
-        if (ag < 8 * 86400) { const hh = ((db.rh[r.n] ||= {})[R.tag_name] ||= []); if (!hh.length || hh[hh.length - 1][1] !== rt) hh.push([Math.round(Date.now() / 1000), rt]); }
+        if (ag < 8 * 86400) { const hh = ((db.rh[r.n] ||= Object.create(null))[sk0(R.tag_name)] ||= []); if (!hh.length || hh[hh.length - 1][1] !== rt) hh.push([Math.round(Date.now() / 1000), rt]); }
       }
       if (j.length < 100) break;
     }
@@ -275,7 +276,7 @@ async function ci() {
       if (j.workflow_runs.length < 100) break;
     }
     const dn = rr.filter((x) => x.status === 'completed' && /^(success|failure|timed_out)$/.test(x.conclusion));
-    const wf = {};
+    const wf = Object.create(null);
     for (const x of dn) { const w = (wf[x.name] ||= [0, 0]); w[x.conclusion === 'success' ? 0 : 1]++; }
     const ds = dn.filter((x) => x.conclusion === 'success' && x.run_started_at).map((x) => (Date.parse(x.updated_at) - Date.parse(x.run_started_at)) / 1000);
     db.ci[r.n] = { n: dn.length, ok: dn.filter((x) => x.conclusion === 'success').length, med: med(ds), wf, last: dn[0] ? [dn[0].conclusion === 'success' ? 1 : 0, sec(dn[0].updated_at)] : null };
@@ -493,7 +494,7 @@ function build() {
 }
 
 function vel(rn, tag, pub) {
-  const h = (db.rh[rn] || {})[tag];
+  const h = (db.rh[rn] || {})[sk0(tag)];
   if (!h || !h.length) return [null, null];
   const at = (t) => { if (h[h.length - 1][0] < t) return null; let i = h.findIndex((x) => x[0] >= t); if (i <= 0) return i === 0 && h[0][0] - pub < 3 * 3600 ? h[0][1] : null; const [a, b] = [h[i - 1], h[i]]; return Math.round(a[1] + (b[1] - a[1]) * (t - a[0]) / (b[0] - a[0])); };
   return [at(pub + 86400), at(pub + 7 * 86400)];
