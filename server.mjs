@@ -39,7 +39,7 @@ db.a ||= {}; db.p ||= {}; db.u ||= {}; db.r ||= []; db.ca ||= {}; db.c ||= {}; d
 db.dc ||= { d: {}, u: {}, ch: {}, h: Array.from({ length: 7 }, () => new Array(24).fill(0)), z: 0, zi: [], gp: [[1793201367, 1793367449]], on: 1, f: 0 };
 if (db.iv !== 2) { for (const s of Object.values(db.ia)) { s.cur = null; s.start = null; s.aft = null; } db.iv = 2; }
 if (db.v !== 3) { for (const s of Object.values(db.a)) { s.cur = null; s.start = null; s.aft = null; } db.v = 3; }
-let dirty = 0, rt = 0, err = null;
+let dirty = 0, rt = 0, err = null, ef = 0;
 const sec = (t) => (t ? Math.round(Date.parse(t) / 1000) : 0);
 const okr = (r) => !r.archived && !/^placeholder-/i.test(r.name) && /craft/i.test(r.name);
 
@@ -138,7 +138,13 @@ const pt = (q) => {
 let RL = { rem: 5000, reset: 0 };
 const low = () => RL.rem < 800 && Date.now() < RL.reset;
 async function gql(q, v) {
-  const r = await fetch('https://api.github.com/graphql', { method: 'POST', headers: { ...hd, 'Content-Type': 'application/json' }, body: JSON.stringify({ query: q, variables: v }), signal: AbortSignal.timeout(30000) });
+  let r;
+  for (let i = 0; ; i++) {
+    r = await fetch('https://api.github.com/graphql', { method: 'POST', headers: { ...hd, 'Content-Type': 'application/json' }, body: JSON.stringify({ query: q, variables: v }), signal: AbortSignal.timeout(30000) }).catch((e) => { if (i >= 2) throw e; return null; });
+    if (r && r.status < 500) break;
+    if (i >= 2) break;
+    await new Promise((f) => setTimeout(f, 3000 * (i + 1)));
+  }
   const rm = r.headers.get('x-ratelimit-remaining'), rs = r.headers.get('x-ratelimit-reset');
   if (rm != null) RL = { rem: +rm, reset: +rs * 1000 };
   if (!r.ok) throw new Error('graphql ' + r.status);
@@ -615,8 +621,8 @@ async function tick() {
     await isync().catch((e) => console.error('[issues]', e.message));
     await ssync().catch((e) => console.error('[stars]', e.message));
     if (Date.now() - qt > H) await sq().catch((e) => console.error('[sonar]', e.message));
-    err = null;
-  } catch (e) { err = e.message; console.error('[sync]', e.message); }
+    err = null; ef = 0;
+  } catch (e) { if (++ef > 1) err = e.message; console.error('[sync]', e.message); }
   build();
   const td = Math.floor(Date.now() / DY) * 86400;
   if (S && (!db.ks.length || db.ks[db.ks.length - 1][0] !== td)) { db.ks.push([td, S.k.c, S.k.m, S.k.cm, S.dl.reduce((a, x) => a + x.t, 0), S.k.st, S.is.o, S.k.fk]); dirty = 1; }
