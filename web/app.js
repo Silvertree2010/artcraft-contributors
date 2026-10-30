@@ -143,7 +143,7 @@ function legend() {
 function growth() {
   let c = S.pre;
   const cm = S.days.map((d) => (c += d[5])), o = vi(), DD = S.days.slice(o), CC = cm.slice(o);
-  const W = 560, H = 230, L = 40, R = 40, B = 22, T = 6, n = DD.length, bw = (W - L - R) / n, st = Math.max(1, Math.round(n / 5));
+  const W = 380, H = 240, L = 34, R = 30, B = 22, T = 6, n = DD.length, bw = (W - L - R) / n, st = Math.max(1, Math.round(n / 4));
   const ma = ax(Math.max(1, ...DD.map((d) => d[4]))), ca = ax(Math.max(1, ...CC));
   const y = (x, tp) => T + (H - T - B) * (1 - x / tp);
   let g = ma.t.map((x) => `<line class="gl" x1="${L}" x2="${W - R}" y1="${y(x, ma.top)}" y2="${y(x, ma.top)}"/><text x="${L - 6}" y="${y(x, ma.top) + 3}" text-anchor="end">${x}</text>`).join('');
@@ -226,9 +226,12 @@ function lead(full) {
   else r = r.slice().sort((a, b) => b[pc] - a[pc] || b[3] - a[3]);
   const rk = new Map(r.map((x, i) => [x[0], i + 1]));
   if (q) r = r.filter((x) => x[0].toLowerCase().includes(q));
-  const lm = full ? lim : 15, sh = r.slice(0, lm);
+  const lm = full ? lim : 10, sh = r.slice(0, lm);
   const th = (i, t, c = 'n') => `<th class="s ${c} ${srt && srt[0] === i ? 'on' : ''}" data-s="${i}">${t}</th>`;
   const me = ME && ME.l.toLowerCase();
+  if (!full) return `<div class="tw"><table><thead><tr><th class="n">#</th><th>Contributor</th>${th(pc, 'Merged')}${th(cc, 'Commits', 'n hide-s')}${th(rc, 'Reviews', 'n hide-s')}<th class="hide-s">Mostly</th></tr></thead><tbody>
+    ${sh.map((x) => `<tr class="lk ${me === x[0].toLowerCase() ? 'me-row' : ''}" data-u="${esc(x[0])}"><td class="n dim">${rk.get(x[0])}</td><td><span class="who"><img loading="lazy" src="${av(x[0], x[1])}" alt="">${esc(x[0])}${tb(x)}</span></td><td class="n">${nk(`l.${x[0]}.${pc}`, x[pc])}</td><td class="n hide-s dim">${nk(`l.${x[0]}.${cc}`, x[cc])}</td><td class="n hide-s dim">${N(x[rc])}</td><td class="hide-s" style="color:${x[8] ? ink(x[8]) : ''};white-space:nowrap">${x[8] ? esc(ap(x[8])[0]) : '–'}</td></tr>`).join('')}
+    </tbody></table></div><a class="btn more" href="#/people">Full leaderboard</a>`;
   return `<div class="tw"><table><thead><tr><th class="n">#</th><th>Contributor</th>${th(pc, 'Merged')}${th(cc, 'Commits', 'n hide-s')}${th(rc, 'Reviews', 'n hide-s')}${th(14, 'Merge rate', 'n hide-s')}${th(15, 'Reverted', 'n hide-s')}${th(7, 'Apps', 'n hide-s')}<th class="hide-s">Mostly</th><th class="hide-s">Built</th>${th(11, 'Median merge', 'n hide-s')}${th(10, 'Last active', 'n hide-s')}</tr></thead><tbody>
     ${sh.map((x) => `<tr class="lk ${me === x[0].toLowerCase() ? 'me-row' : ''}" data-u="${esc(x[0])}"><td class="n dim">${rk.get(x[0])}</td>
     <td><span class="who"><img loading="lazy" src="${av(x[0], x[1])}" alt="">${esc(x[0])}${tb(x)}</span></td>
@@ -243,7 +246,7 @@ function segs() {
 }
 
 function feed() {
-  return `<ul class="feed">${S.recent.slice(0, 14).map(([m, rn, nr, ti, l]) => `<li><img src="${ico(rn)}" alt="${esc(ap(rn)[0])}" title="${esc(ap(rn)[0])}">
+  return `<ul class="feed">${S.recent.slice(0, 10).map(([m, rn, nr, ti, l]) => `<li><img src="${ico(rn)}" alt="${esc(ap(rn)[0])}" title="${esc(ap(rn)[0])}">
     <span class="t"><a href="${esc(gu(rn))}/pull/${nr}" target="_blank" rel="noopener">${esc(ti)}</a><br><span class="m"><a href="#/u/${encodeURIComponent(l)}" class="dim">${esc(l)}</a></span></span><span class="m">${ago(m)}</span></li>`).join('')}</ul>`;
 }
 
@@ -313,7 +316,7 @@ function cis() {
 
 function dcs() {
   const D = S.dc; if (!D) return '';
-  const W = 900, H = 180, L = 40, B = 22, T = 6, n = D.days.length || 1, bw = (W - L) / n, st = Math.max(1, Math.round(n / 7));
+  const W = 600, H = 150, L = 40, B = 22, T = 6, n = D.days.length || 1, bw = (W - L) / n, st = Math.max(1, Math.round(n / 6));
   const { top, t } = ax(Math.max(1, ...D.days.map((d) => d[1])));
   const ua = ax(Math.max(1, ...D.days.map((d) => d[2])));
   const y = (x, tp = top) => T + (H - T - B) * (1 - x / tp);
@@ -326,22 +329,112 @@ function dcs() {
     g += `<rect class="hv" x="${x}" y="${T}" width="${bw}" height="${H - T - B}" data-t="${esc(`<b>${dt(d[0], 1)}</b><br>${N(d[1])} messages<br>${N(d[2])} people${d[3] ? '<br>Partly missing' : ''}`)}"/>`;
     if (i % st === 0) g += `<text x="${x}" y="${H - 6}">${dt(d[0])}</text>`;
   });
-  const mx = Math.max(1, ...D.ch7.map((x) => x[1]));
-  return `<section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Discord</h2><span class="sub">ArtCraft server, public channels, since ${dt(D.f, 1)}</span></div>
-  <div class="mini" style="margin-bottom:20px">
-    <div><span class="lbl">Messages, 7d</span><b>${nk('dc.m7', D.m7)}</b></div>
-    <div><span class="lbl">People, 7d</span><b>${nk('dc.u7', D.u7)}</b><span class="sub">wrote at least once</span></div>
-    <div><span class="lbl">People per day</span><b>${D.a7 == null ? '–' : N(D.a7)}</b><span class="sub">average, last full days</span></div>
-  </div>
-  <h3 class="h3">Per day</h3><svg class="ch" viewBox="0 0 ${W} ${H}">${g}<polyline points="${pts}" fill="none" stroke="var(--strong)" stroke-width="1.5" pointer-events="none"/></svg>
-  <p class="note" style="margin:8px 0 0"><span style="color:var(--accent-ink)">Messages</span> as bars, people as line. People only on complete days. Grey days are incomplete.</p>
-  <div class="grid g2" style="margin:20px 0 0">
-    <div><h3 class="h3">Busiest channels, 7 days</h3><table><tbody>${D.ch7.map(([c, v]) => `<tr><td>#${esc(c)}</td><td class="n">${N(v)}</td><td style="width:40%"><div class="bar"><i style="width:${v / mx * 100}%;background:var(--accent)"></i></div></td></tr>`).join('')}</tbody></table></div>
-    <div><h3 class="h3">When people write</h3>${heat(D.h, 'messages')}<p class="note" style="margin:6px 0 0">Your local time</p></div>
-  </div></section>`;
+  return `<section class="box"><div class="box-h"><h2>Discord</h2><span class="sub">Public channels, since ${dt(D.f, 1)}</span></div>
+  <div class="trio"><div><b>${nk('dc.m7', D.m7)}</b><span>messages, 7 days</span></div><div><b>${nk('dc.u7', D.u7)}</b><span>people, 7 days</span></div><div><b>${D.a7 == null ? '–' : N(D.a7)}</b><span>people per day</span></div></div>
+  <svg class="ch" viewBox="0 0 ${W} ${H}">${g}<polyline points="${pts}" fill="none" stroke="var(--strong)" stroke-width="1.5" pointer-events="none"/></svg>
+  <p class="note" style="margin:8px 0 0"><span style="color:var(--accent-ink)">Messages</span> as bars, people as line. Grey days are incomplete.</p></section>`;
+}
+
+function spark(v, c = 'var(--accent)') {
+  if (!v || v.length < 2) return '';
+  const mx = Math.max(1, ...v), W = 120, H = 28;
+  const p = v.map((x, i) => `${(i / (v.length - 1) * W).toFixed(1)},${(H - 2 - (H - 4) * x / mx).toFixed(1)}`).join(' ');
+  return `<svg class="spk" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><polyline points="${p}" fill="none" stroke="${c}" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg>`;
+}
+function arc(cx, cy, R0, r0, a0, a1) {
+  const e = Math.min(a1, a0 + Math.PI * 2 - 1e-4), lg = e - a0 > Math.PI ? 1 : 0, P = (r, a) => `${(cx + r * Math.cos(a)).toFixed(2)},${(cy + r * Math.sin(a)).toFixed(2)}`;
+  return `M${P(R0, a0)}A${R0},${R0} 0 ${lg} 1 ${P(R0, e)}L${P(r0, e)}A${r0},${r0} 0 ${lg} 0 ${P(r0, a0)}Z`;
+}
+function donut(it, o = {}) {
+  it = it.filter((x) => x[1] > 0);
+  const T = it.reduce((a, x) => a + x[1], 0) || 1;
+  let a = -Math.PI / 2, g = '';
+  for (const [l, v, c] of it) { const b = a + v / T * Math.PI * 2; g += `<path d="${arc(70, 70, 66, 44, a + .012, b - .012)}" fill="${c}" data-t="${esc(`<b>${esc(l)}</b><br>${N(v)}, ${pct(v, T)}`)}"/>`; a = b; }
+  return `<div class="dn"><div class="dn-c"><svg viewBox="0 0 140 140">${g}</svg><div class="dn-m"><b>${o.c ?? big(T)}</b><span>${o.s || ''}</span></div></div><ul>${it.slice(0, o.n || 6).map(([l, v, c]) => `<li><i style="background:${c}"></i><span>${esc(l)}</span><b>${pct(v, T)}</b></li>`).join('')}</ul></div>`;
+}
+function clock(A, Bv, la, lb) {
+  const sh = Math.round(-new Date().getTimezoneOffset() / 60), loc = (M) => { const r = new Array(24).fill(0); M.forEach((row) => row.forEach((v, h) => { r[(((h + sh) % 24) + 24) % 24] += v; })); return r; };
+  const a = loc(A), b = Bv ? loc(Bv) : null, ma = Math.max(1, ...a), mb = b ? Math.max(1, ...b) : 1, C = 120;
+  let g = '';
+  for (let h = 0; h < 24; h++) {
+    const a0 = (h / 24) * Math.PI * 2 - Math.PI / 2 + .02, a1 = ((h + 1) / 24) * Math.PI * 2 - Math.PI / 2 - .02;
+    g += `<path d="${arc(C, C, 34 + 40 * a[h] / ma, 30, a0, a1)}" fill="var(--accent)" data-t="${esc(`<b>${String(h).padStart(2, '0')}:00</b><br>${N(a[h])} ${la}${b ? `<br>${N(b[h])} ${lb}` : ''}`)}"/>`;
+    if (b) g += `<path d="${arc(C, C, 80 + 30 * b[h] / mb, 78, a0, a1)}" fill="var(--strong)" fill-opacity=".8" pointer-events="none"/>`;
+  }
+  for (const h of [0, 6, 12, 18]) { const an = (h / 24) * Math.PI * 2 - Math.PI / 2; g += `<text x="${C + 116 * Math.cos(an)}" y="${C + 116 * Math.sin(an) + 3}" text-anchor="middle">${String(h).padStart(2, '0')}</text>`; }
+  g += `<circle cx="${C}" cy="${C}" r="29" fill="none" stroke="var(--line)"/><circle cx="${C}" cy="${C}" r="77" fill="none" stroke="var(--line)"/>`;
+  return `<svg class="ch clk" viewBox="-6 -6 252 252">${g}</svg><p class="note" style="margin:8px 0 0"><span style="color:var(--accent-ink)">Inner: ${la}</span>${b ? `, outer: ${lb}` : ''}. Your local time.</p>`;
+}
+function sqz(it, x, y, w, h) {
+  const out = []; let rest = it.slice();
+  const tot = rest.reduce((a, b) => a + b.v, 0); if (!tot) return out;
+  const sc = (w * h) / tot;
+  while (rest.length) {
+    const sh = Math.min(w, h); let row = [], best = Infinity;
+    for (const t of rest) {
+      const r = [...row, t], sm = r.reduce((a, b) => a + b.v * sc, 0), mx = Math.max(...r.map((z) => z.v * sc)), mn = Math.min(...r.map((z) => z.v * sc));
+      const wr = Math.max((sh * sh * mx) / (sm * sm), (sm * sm) / (sh * sh * mn));
+      if (wr <= best) { best = wr; row = r; } else break;
+    }
+    const sm = row.reduce((a, b) => a + b.v * sc, 0), t = sm / sh; let o = 0;
+    for (const z of row) { const l = (z.v * sc) / t; out.push(w >= h ? { ...z, x, y: y + o, w: t, h: l } : { ...z, x: x + o, y, w: l, h: t }); o += l; }
+    if (w >= h) { x += t; w -= t; } else { y += t; h -= t; }
+    rest = rest.slice(row.length);
+  }
+  return out;
+}
+let tmk = 'cm';
+const lum = (h) => { const n = parseInt(h.slice(1), 16), f = (v) => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }; return .2126 * f(n >> 16) + .7152 * f((n >> 8) & 255) + .0722 * f(n & 255); };
+function tmap() {
+  const K = { cm: ['Commits', (x) => x.cm], m: ['Merged PRs', (x) => x.m], dl: ['Downloads', (x) => x.dl], s: ['Stars', (x) => x.s] };
+  const it = S.rs.filter((x) => AP[x.n.toLowerCase()]).map((x) => ({ n: x.n, v: K[tmk][1](x) || 0 })).filter((x) => x.v > 0).sort((a, b) => b.v - a.v);
+  const R = sqz(it, 0, 0, 100, 32), T = it.reduce((a, b) => a + b.v, 0);
+  return `<div class="tmg">${R.map((r) => `<a href="#/app/${encodeURIComponent(r.n)}" style="left:${r.x}%;top:${r.y / 32 * 100}%;width:${Math.min(r.w, 100 - r.x)}%;height:${Math.min(r.h, 32 - r.y) / 32 * 100}%;background:${col(r.n)};color:${lum(col(r.n)) > .5 ? '#101014' : '#fff'}" data-t="${esc(`<b>${esc(ap(r.n)[0])}</b><br>${N(r.v)} ${K[tmk][0].toLowerCase()}, ${pct(r.v, T)}`)}">${r.w * r.h > 45 ? `<span><img src="${ico(r.n)}" alt="">${esc(ap(r.n)[0])}</span><b>${big(r.v)}</b>` : ''}</a>`).join('')}</div>`;
+}
+function wall(L) {
+  return `<div class="wall">${L.map(([l, i, t]) => `<a href="#/u/${encodeURIComponent(l)}" data-t="${esc(`<b>${esc(l)}</b>${t ? '<br>' + t : ''}`)}"><img loading="lazy" src="${av(l, i, 64)}" alt="${esc(l)}"></a>`).join('')}</div>`;
 }
 
 function overview() {
+  const k = S.k, D = S.days.slice(-30), sm = (i) => D.map((d) => d[i]), mg = D.map((d) => d[3].reduce((a, b) => a + b, 0));
+  let cc = S.pre; const cum = S.days.map((d) => (cc += d[5])).slice(-30);
+  const m30 = {}; S.days.slice(-30).forEach((d) => d[3].forEach((v, i) => { if (v) m30[S.rs[i].n] = (m30[S.rs[i].n] || 0) + v; }));
+  const ae = Object.entries(m30).sort((a, b) => b[1] - a[1]), at = ae.slice(0, 7).map(([n, v]) => [ap(n)[0], v, col(n)]), ao = ae.slice(7).reduce((a, x) => a + x[1], 0);
+  if (ao) at.push(['Other', ao, 'var(--line2)']);
+  const P = {}; let DT = 0; for (const x of S.dl || []) { DT += x.t; for (const kk in x.p) P[kk] = (P[kk] || 0) + x.p[kk]; }
+  const i = S.is, dc = S.dc;
+  return `<div class="top"><div><h1>Craft App Bundle contributions</h1></div><span class="sub"><i class="lv"></i>Live${S.sync ? `, syncing ${S.sync} repos` : ''}, updated <span id="upd">${sa(S.at)}</span></span></div>
+  ${S.err ? `<div class="err">GitHub sync error: ${esc(S.err)}</div>` : ''}
+  <div class="kpi">
+    <div><span class="lbl">Contributors</span><b>${nk('k.c', k.c)}</b>${dlt(k.n7)}${spark(cum)}</div>
+    <div><span class="lbl">Merged PRs</span><b>${nk('k.m', k.m)}</b>${dlt(k.m7)}${spark(mg)}</div>
+    <div><span class="lbl">Commits</span><b>${nk('k.cm', k.cm)}</b>${dlt(k.c7)}${spark(sm(6))}</div>
+    <div><span class="lbl">Reviews</span><b>${nk('k.rv', k.rv)}</b>${dlt(k.rv7)}${spark(sm(7))}</div>
+    <div><span class="lbl">Stars</span><b>${big(k.st)}</b>${S.st.sy ? '' : dlt(k.s7)}${S.st.sy ? '' : spark(S.st.d.slice(-30))}</div>
+    <div><span class="lbl">Downloads</span><b>${big(DT)}</b>${dlt((S.dd || []).slice(-7).reduce((a, x) => a + x[1], 0))}${spark((S.dd || []).map((x) => x[1]))}</div>
+  </div>
+  <section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Merged per day</h2></div><div id="daily">${daily()}</div>${legend()}</section>
+  <div class="grid g3">
+    <section class="box"><div class="box-h"><h2>Where work lands</h2><span class="sub">Merged, 30 days</span></div>${donut(at, { s: 'merged' })}</section>
+    <section class="box"><div class="box-h"><h2>Downloads</h2><span class="sub">By platform</span></div>${donut(PL.filter(([kk]) => P[kk]).map(([kk, n, c]) => [n, P[kk], c]), { c: big(DT), s: 'downloads' })}</section>
+    <section class="box"><div class="box-h"><h2>Around the clock</h2></div>${clock(S.heat, dc && dc.h, 'merged PRs', 'Discord messages')}</section>
+  </div>
+  <div class="grid g32">
+    <section class="box"><div class="box-h"><h2>Leaderboard</h2>${segs()}</div><div id="lead">${lead(false)}</div></section>
+    <section class="box"><div class="box-h"><h2>Latest merges</h2></div>${feed()}</section>
+  </div>
+  <section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Apps</h2><div class="seg" id="tmk">${[['cm', 'Commits'], ['m', 'Merged'], ['dl', 'Downloads'], ['s', 'Stars']].map(([kk, t]) => `<button data-k="${kk}" class="${tmk === kk ? 'on' : ''}">${t}</button>`).join('')}</div></div><div id="tmap">${tmap()}</div></section>
+  <div class="grid g3">
+    <section class="box"><div class="box-h"><h2>Contributors</h2><span class="sub"><span style="color:var(--accent-ink)">Total</span>, active per day</span></div>${growth()}</section>
+    <section class="box"><div class="box-h"><h2>Time to merge</h2><span class="sub">Median ${du(k.t)}</span></div>${hist()}</section>
+    <section class="box"><div class="box-h"><h2>Open issues</h2>${i.sy ? '<span class="sub">Syncing</span>' : `<span class="sub">First reply ${du(i.fr)}</span>`}</div>${donut([['Bugs', i.b, 'var(--bad)'], ['Features', i.f, 'var(--accent)'], ['Other', i.o - i.b - i.f, 'var(--line2)']], { c: big(i.o), s: 'open' })}<p class="note" style="margin:10px 0 0">${N(i.o30)} opened and ${N(i.x30)} closed in 30 days.</p></section>
+  </div>
+  <div class="grid g32">
+    ${dc ? dcs() : '<div></div>'}
+    ${S.team && S.team.length ? `<section class="box"><div class="box-h"><h2>Team</h2><span class="sub">Presumed, from merges and org membership</span></div>${wall(S.team.map(([l, ii, m]) => [l, ii, m ? `${N(m)} merges` : 'Org member']))}</section>` : ''}
+  </div>`;
+}
+function overview0() {
   const k = S.k;
   return `<div class="top"><div><h1>Craft App Bundle contributions</h1></div><span class="sub"><i class="lv"></i>Live${S.sync ? `, syncing ${S.sync} repos` : ''}, updated <span id="upd">${sa(S.at)}</span></span></div>
   ${S.err ? `<div class="err">GitHub sync error: ${esc(S.err)}</div>` : ''}
@@ -416,7 +509,7 @@ function strk(ua) {
 }
 function cal(ua) {
   const td = Math.floor(Date.now() / 86400000), ds = Object.keys(ua).map(Number);
-  const f = ds.length ? Math.min(...ds) : td, w1 = Math.floor((td + 3) / 7), w0 = Math.min(Math.floor((f + 3) / 7), w1 - 15);
+  const f = ds.length ? Math.min(...ds) : td, w1 = Math.floor((td + 3) / 7), w0 = Math.max(w1 - 25, Math.min(Math.floor((f + 3) / 7), w1 - 15));
   const nw = w1 - w0 + 1, cs = 13, L = 30, T = 16, W = L + nw * cs, H = T + 7 * cs + 4;
   const v = (d) => (ua[d] || [0, 0, 0, 0]).reduce((a, b) => a + b, 0), mx = Math.max(1, ...ds.map(v));
   let g = ['Mon', '', 'Wed', '', 'Fri', '', ''].map((t, i) => t ? `<text x="0" y="${T + i * cs + 10}">${t}</text>` : '').join(''), lm = -1;
@@ -429,7 +522,7 @@ function cal(ua) {
       g += `<rect x="${x}" y="${T + i * cs}" width="${cs - 2}" height="${cs - 2}" fill="${n ? 'var(--accent)' : 'var(--sunken)'}" ${n ? `fill-opacity="${o.toFixed(2)}"` : ''} data-t="${esc(`<b>${dt(d * 86400, 1)}</b><br>${a[0]} commits, ${a[1]} PRs opened<br>${a[2]} merged, ${a[3]} reviews`)}"/>`;
     }
   }
-  return `<div class="tw"><svg class="ch cal" viewBox="0 0 ${W} ${H}" style="max-width:${W * 2.2}px">${g}</svg></div>`;
+  return `<div class="tw"><svg class="ch cal" viewBox="0 0 ${W} ${H}" style="max-width:${W * 1.7}px">${g}</svg></div>`;
 }
 function bdg(r, sk) {
   const b = [], ms = (v, l, t) => { const h = [...l].reverse().find((x) => v >= x); if (h) b.push([`${N(h)}+ ${t}`, `${N(v)} ${t}`]); };
@@ -449,7 +542,7 @@ function prof(d, l, mine) {
   for (const p of d.prs) if (p[3]) (by[p[0]] ||= [0, 0])[0]++;
   for (const [n, c] of d.cm || []) (by[n] ||= [0, 0])[1] = c;
   const ab = Object.entries(by).sort((a, b) => b[1][1] - a[1][1] || b[1][0] - a[1][0]), mx = Math.max(1, ...ab.map((x) => x[1][1]));
-  const lp = mine ? 100 : 30, sk = strk(d.ua || {}), bu = `${location.origin}/badge/u/${encodeURIComponent(r[0])}.svg`, md = `[![ArtCraft contributions](${bu})](${location.origin}/u/${encodeURIComponent(r[0])})`;
+  const lp = mine ? 30 : 12, sk = strk(d.ua || {}), bu = `${location.origin}/badge/u/${encodeURIComponent(r[0])}.svg`, md = `[![ArtCraft contributions](${bu})](${location.origin}/u/${encodeURIComponent(r[0])})`;
   return `${bdg(r, sk)}<div class="kpi">
     <div><span class="lbl">Rank</span><b>${d.rank} <span class="sub" style="font:400 14px Inter;display:inline">of ${N(d.of)}</span></b></div>
     <div><span class="lbl">Merged</span><b>${nk('p.m', r[2])}</b><span class="sub">${pc0(r[14])} merge rate, ${N(r[15])} reverted</span></div>
@@ -459,11 +552,10 @@ function prof(d, l, mine) {
     <div><span class="lbl">Median merge</span><b>${du(r[11])}</b></div>
   </div>
   <section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Activity</h2><span class="sub">Commits, PRs and reviews per day</span></div>${cal(d.ua || {})}</section>
-  ${r[13] && r[13].length ? `<section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Built</h2><span class="sub">Top committer</span></div><div class="leg" style="margin:0">${r[13].map((n) => `<a class="app" style="color:${ink(n)};border:1px solid var(--line);padding:6px 10px" href="${esc(gu(n))}" target="_blank" rel="noopener"><img src="${ico(n)}" alt="">${esc(ap(n)[0])}</a>`).join('')}</div></section>` : ''}
   ${d.prs.length ? `<section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Per day</h2><span class="sub"><span style="color:var(--accent-ink)">Merged</span> and opened</span></div>${weekly(d.prs)}</section>` : ''}
   <div class="grid g32">
     <section class="box"><div class="box-h"><h2>Pull requests</h2><span class="sub">${N(d.prs.length)}</span></div>${d.prs.length ? '' : '<p class="empty">None.</p>'}<ul class="feed">${d.prs.slice(0, lp).map((p) => `<li><img src="${ico(p[0])}" alt="${esc(ap(p[0])[0])}" title="${esc(ap(p[0])[0])}"><span class="t"><a href="${esc(gu(p[0]))}/pull/${p[1]}" target="_blank" rel="noopener">${esc(p[5])}</a><br><span class="m">${esc(ap(p[0])[0])} #${p[1]}, ${dt(p[2], 1)}${p[3] ? `, merged in ${du(p[3] - p[2])}` : ''}</span></span>${stat(p)}</li>`).join('')}</ul>${d.prs.length > lp ? `<a class="btn more" target="_blank" rel="noopener" href="https://github.com/pulls?q=${encodeURIComponent(`is:pr author:${l} org:storytold${S.rs.filter((x) => x.x).map((x) => ` repo:${x.w}/${x.n}`).join('')}`)}">All on GitHub</a>` : ''}</section>
-    <section class="box"><div class="box-h"><h2>Apps</h2></div><table><thead><tr><th>App</th><th class="n">Commits</th><th class="n">Merged</th><th style="width:30%"></th></tr></thead><tbody>${ab.map(([n, [m, c]]) => `<tr class="lk" data-go="#/app/${encodeURIComponent(n)}"><td><span class="app" style="color:${ink(n)}"><img src="${ico(n)}" alt="">${esc(ap(n)[0])}</span></td><td class="n">${N(c)}</td><td class="n dim">${N(m)}</td><td><div class="bar"><i style="width:${c / mx * 100}%;background:${col(n)}"></i></div></td></tr>`).join('') || '<tr><td class="dim">Nothing yet</td></tr>'}</tbody></table></section>
+    <section class="box"><div class="box-h"><h2>Apps</h2><span class="sub">By commits</span></div>${ab.length ? (() => { const a = ab.slice(0, 7).map(([n, [m, c2]]) => [ap(n)[0], c2 || m, col(n)]), o = ab.slice(7).reduce((x, y) => x + (y[1][1] || y[1][0]), 0); if (o) a.push(['Other', o, 'var(--line2)']); return donut(a, { s: 'commits', n: 8 }); })() : '<p class="empty">Nothing yet.</p>'}</section>
   </div>
   <div class="grid g2">
     <form class="box" id="vs" data-a="${esc(r[0])}"><div class="box-h"><h2>Compare</h2></div><div style="display:flex;gap:8px;flex-wrap:wrap"><input class="srch" id="vsq" placeholder="Other GitHub user" autocomplete="off" list="vsl"><datalist id="vsl">${S ? S.lead.slice(0, 200).map((x) => `<option value="${esc(x[0])}">`).join('') : ''}</datalist><button class="btn">Compare</button></div></form>
@@ -541,27 +633,23 @@ function apage(d) {
     <div><span class="lbl">Downloads</span><b>${d.dl ? big(d.dl.t) : '–'}</b>${d.dl && d.dl.br ? `<span class="sub">${N(d.dl.br[0])} Homebrew, 30d</span>` : ''}</div>
     <div><span class="lbl">Merge time</span><b>${du(r.t)}</b><span class="sub">first review ${du(r.fr)}</span></div>
   </div>`;
-  const pm = Math.max(1, ...d.ppl.map((x) => x[3]));
-  const ppl = `<div class="tw"><table><thead><tr><th>Contributor</th><th class="n">Commits</th><th class="n">Merged</th><th class="n hide-s">Reviews</th><th class="n hide-s">Issues</th><th class="hide-s" style="width:20%"></th></tr></thead><tbody>${d.ppl.slice(0, 25).map((x) => `<tr class="lk" data-go="#/u/${encodeURIComponent(x[0])}"><td><span class="who"><img loading="lazy" src="${av(x[0], x[1])}" alt="">${esc(x[0])}</span></td><td class="n">${N(x[3])}</td><td class="n dim">${N(x[2])}</td><td class="n hide-s dim">${N(x[4])}</td><td class="n hide-s dim">${N(x[5])}</td><td class="hide-s"><div class="bar"><i style="width:${x[3] / pm * 100}%;background:${c}"></i></div></td></tr>`).join('')}</tbody></table></div>`;
-  const rl = d.rl.slice(0, 15);
-  const rt = rl.length ? `<div class="tw"><table><thead><tr><th>Release</th><th>Date</th><th class="n">Downloads</th><th class="n hide-s">First 24h</th><th class="n hide-s">First 7 days</th><th class="n hide-s">Changes</th></tr></thead><tbody>${rl.map((x) => `<tr><td><a href="${esc(gu(n))}/releases/tag/${encodeURIComponent(x[0])}" target="_blank" rel="noopener">${esc(x[0])}</a>${x[3] ? ' <span class="st n">Pre</span>' : ''}</td><td class="dim">${dt(x[1], 1)}</td><td class="n">${N(x[2])}</td><td class="n hide-s dim">${N(x[5])}</td><td class="n hide-s dim">${N(x[6])}</td><td class="n hide-s dim">${x[4] || '–'}</td></tr>`).join('')}</tbody></table></div>${d.rl.length > 15 ? `<a class="btn more" href="#/releases">All releases</a>` : ''}<p class="note" style="margin:10px 0 0">First 24h and 7 days are tracked from 30 Oct 2026 on. Changes counts bullet points in the release notes.</p>` : '<p class="empty">No releases.</p>';
-  const i = r.is;
+  const i = r.is, ci = d.ci, rl = d.rl.filter((x) => !x[3]).slice(0, 6);
+  const ppl = `<table><thead><tr><th>Contributor</th><th class="n">Commits</th><th class="n">Merged</th><th class="n hide-s">Reviews</th></tr></thead><tbody>${d.ppl.slice(0, 10).map((x) => `<tr class="lk" data-go="#/u/${encodeURIComponent(x[0])}"><td><span class="who"><img loading="lazy" src="${av(x[0], x[1])}" alt="">${esc(x[0])}</span></td><td class="n">${N(x[3])}</td><td class="n dim">${N(x[2])}</td><td class="n hide-s dim">${N(x[4])}</td></tr>`).join('')}</tbody></table>`;
+  const md = `[![${ap(n)[0]} downloads](${location.origin}/badge/app/${n}.svg)](${location.origin}/app/${n})`;
   return `<div class="prof"><img src="${ico(n)}" alt="" style="border:0"><div class="x"><h1 style="color:${ink(n)}">${esc(ap(n)[0])}${d.x ? ' <span class="st n tm">Community</span>' : ''}</h1><div class="sub">${esc(d.d)}${d.d ? '. ' : ''}<a href="${esc(gu(n))}" target="_blank" rel="noopener">${esc(d.w)}/${esc(n)} on GitHub</a></div></div><button class="btn" data-cp="${esc(location.origin + '/app/' + encodeURIComponent(n))}">Copy link</button></div>
   ${kp}
   <section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Per day</h2><span class="sub"><span style="color:${ink(n)}">Merged</span>, commits as line</span></div>${dual(ti, c)}</section>
+  <div class="grid g3">
+    <section class="box"><div class="box-h"><h2>Downloads</h2><span class="sub">By platform</span></div>${d.dl ? donut(PL.filter(([k]) => d.dl.p[k]).map(([k, nm, cc]) => [nm, d.dl.p[k], cc]), { c: big(d.dl.t), s: 'downloads' }) : '<p class="empty">No releases.</p>'}</section>
+    <section class="box"><div class="box-h"><h2>Open issues</h2>${i ? `<span class="sub">First reply ${du(i.fr)}</span>` : ''}</div>${i ? donut([['Bugs', i.b, 'var(--bad)'], ['Features', i.f, 'var(--accent)'], ['Other', i.o - i.b - i.f, 'var(--line2)']], { c: big(i.o), s: 'open' }) + `<p class="note" style="margin:10px 0 0">${N(i.o30)} opened, ${N(i.x30)} closed in 30 days.</p>` : '<p class="empty">Still syncing.</p>'}</section>
+    <section class="box"><div class="box-h"><h2>CI on main</h2><span class="sub">14 days</span></div>${ci && ci.n ? donut([['Passed', ci.ok, 'var(--good)'], ['Failed', ci.n - ci.ok, 'var(--bad)']], { c: pc0(ci.ok / ci.n), s: `${N(ci.n)} runs` }) + `<p class="note" style="margin:10px 0 0">Median run ${du(ci.med)}.${ci.wf.filter(([, [o, f]]) => f).length ? ' Failing most: ' + esc(ci.wf.slice().sort((a, b) => b[1][1] - a[1][1])[0][0]) + '.' : ''}</p>` : '<p class="empty">No runs.</p>'}</section>
+  </div>
   <div class="grid g32">
-    <section class="box"><div class="box-h"><h2>Contributors</h2><span class="sub">Top ${Math.min(25, d.ppl.length)}</span></div>${ppl}</section>
-    <section class="box"><div class="box-h"><h2>Latest merges</h2></div><ul class="feed">${d.rec.slice(0, 14).map(([m, rn, nr, ti, l]) => `<li><img src="${av(l, 0, 44)}" alt=""><span class="t"><a href="${esc(gu(rn))}/pull/${nr}" target="_blank" rel="noopener">${esc(ti)}</a><br><span class="m"><a href="#/u/${encodeURIComponent(l)}" class="dim">${esc(l)}</a></span></span><span class="m">${ago(m)}</span></li>`).join('') || '<li class="dim">None yet</li>'}</ul></section>
+    <section class="box"><div class="box-h"><h2>Top contributors</h2></div>${ppl}</section>
+    <section class="box"><div class="box-h"><h2>Releases</h2><a class="sub" href="#/releases">All ${N(d.rl.length)}</a></div><ul class="feed rlf">${rl.map((x) => `<li><span class="st n">${esc(x[0].replace(/^[a-z-]*v(?=\d)/i, 'v'))}</span><span class="t"><a href="${esc(gu(n))}/releases/tag/${encodeURIComponent(x[0])}" target="_blank" rel="noopener">${N(x[2])} downloads</a><br><span class="m">${x[4] ? `${x[4]} changes` : ''}</span></span><span class="m">${ago(x[1])}</span></li>`).join('') || '<li class="dim">None</li>'}</ul></section>
   </div>
-  <section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Releases</h2><span class="sub">${N(d.rl.length)} total</span></div>${rt}</section>
-  ${d.dl ? `<section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Downloads</h2></div>${d.dd.length >= 2 ? `<h3 class="h3">Per day</h3>${bch(d.dd, { u: 'downloads', H: 140, c })}<div style="height:16px"></div>` : ''}${sbar(d.dl.p, d.dl.t, 14)}<div class="leg">${PL.filter(([k]) => d.dl.p[k]).map(([k, nm, cc]) => `<span><i style="background:${cc}"></i>${nm} ${N(d.dl.p[k])} (${pct(d.dl.p[k], d.dl.t)})</span>`).join('')}</div></section>` : ''}
-  <div class="grid g2">
-    <section class="box"><div class="box-h"><h2>Stars</h2></div>${d.st ? lch(d.swk, { u: 'stars' }) : '<p class="empty">Star history is still loading.</p>'}</section>
-    <section class="box"><div class="box-h"><h2>Issues</h2></div>${i ? `<div class="mini"><div><span class="lbl">Open</span><b>${N(i.o)}</b></div><div><span class="lbl">Opened, 30d</span><b>${N(i.o30)}</b></div><div><span class="lbl">Closed, 30d</span><b>${N(i.x30)}</b></div><div><span class="lbl">Open bugs</span><b>${N(i.b)}</b></div><div><span class="lbl">Open features</span><b>${N(i.f)}</b></div><div><span class="lbl">First reply</span><b>${du(i.fr)}</b></div></div><a class="btn more" target="_blank" rel="noopener" href="${esc(gu(n))}/issues">Issues on GitHub</a>` : '<p class="empty">Issues are still syncing.</p>'}</section>
-  </div>
-  ${d.ci ? `<section class="box" style="margin-bottom:24px"><div class="box-h"><h2>CI on ${esc('main')}</h2><span class="sub">${pc0(d.ci.n ? d.ci.ok / d.ci.n : null)} of ${N(d.ci.n)} push runs passed, last 14 days, median ${du(d.ci.med)}</span></div><table><thead><tr><th>Workflow</th><th class="n">Passed</th><th class="n">Failed</th><th class="n">Rate</th></tr></thead><tbody>${d.ci.wf.map(([w, [o, f]]) => `<tr><td>${esc(w)}</td><td class="n">${N(o)}</td><td class="n dim">${N(f)}</td><td class="n">${pc0(o / (o + f))}</td></tr>`).join('')}</tbody></table></section>` : ''}
-  ${r.q ? `<p class="note">Code quality on SonarCloud: gate ${esc((QG[r.q.alert_status] || [, '–'])[1])}, ${N(r.q.code_smells)} code smells, ${N(r.q.ncloc)} lines. <a href="https://sonarcloud.io/project/overview?id=${esc(r.q.k)}" target="_blank" rel="noopener">Details</a></p>` : ''}
-  <h3 class="h3" style="margin-top:24px">Badge for your README</h3><div class="code"><code>${esc(`[![${ap(n)[0]} downloads](${location.origin}/badge/app/${n}.svg)](${location.origin}/app/${n})`)}</code><button class="btn" data-cp="${esc(`[![${ap(n)[0]} downloads](${location.origin}/badge/app/${n}.svg)](${location.origin}/app/${n})`)}">Copy</button></div>`;
+  ${d.st ? `<section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Stars</h2><span class="sub">${N(d.s)}</span></div>${lch(d.swk, { u: 'stars', W: 900, H: 160 })}</section>` : ''}
+  <div class="code"><code>${esc(md)}</code><button class="btn" data-cp="${esc(md)}">Copy badge</button></div>`;
 }
 function dual(D, c) {
   const W = 900, H = 190, L = 34, B = 22, T = 6, n = D.length || 1, bw = (W - L) / n, st = Math.max(1, Math.round(n / 7));
@@ -578,7 +666,7 @@ function dual(D, c) {
   return `<svg class="ch" viewBox="0 0 ${W} ${H}">${g}<polyline points="${pts}" fill="none" stroke="var(--strong)" stroke-width="1.5" pointer-events="none"/></svg>`;
 }
 
-let rapp = '', rlim = 60;
+let rapp = '', rlim = 25;
 function rpage(d) {
   const all = d.rl, now = Date.now() / 1000;
   const wk = new Map();
@@ -597,7 +685,7 @@ function rpage(d) {
 }
 
 function wpage(d) {
-  const k = d.k, pl = (r, u) => r.length ? `<table><tbody>${r.map((x) => `<tr class="lk" data-go="#/u/${encodeURIComponent(x[0])}"><td><span class="who"><img loading="lazy" src="${av(x[0], x[1])}" alt="">${esc(x[0])}</span></td><td class="n">${N(x[2])} <span class="dim">${u}</span></td></tr>`).join('')}</tbody></table>` : '<p class="empty">Nobody yet.</p>';
+  const k = d.k, pl = (r, u) => r.length ? `<table><tbody>${r.slice(0, 5).map((x) => `<tr class="lk" data-go="#/u/${encodeURIComponent(x[0])}"><td><span class="who"><img loading="lazy" src="${av(x[0], x[1])}" alt="">${esc(x[0])}</span></td><td class="n">${N(x[2])} <span class="dim">${u}</span></td></tr>`).join('')}</tbody></table>` : '<p class="empty">Nobody yet.</p>';
   const dsum = d.dd.reduce((a, x) => a + x[1], 0);
   return `<div class="top"><h1>This week</h1><span class="sub">${dt(d.f, 1)} to ${dt(d.t, 1)}</span></div>
   <div class="kpi">
@@ -609,17 +697,16 @@ function wpage(d) {
     <div><span class="lbl">Issues</span><b>${N(d.is[0])}</b><span class="sub">opened, ${N(d.is[1])} closed</span></div>
   </div>
   ${dsum ? `<p class="note">${N(dsum)} downloads this week.</p>` : ''}
-  <section class="box" style="margin-bottom:24px"><div class="box-h"><h2>New contributors</h2><span class="sub">First PR or commit this week</span></div>${d.nw.length ? `<ul class="feed">${d.nw.slice(0, 30).map(([l, i, m, c, f]) => `<li><img src="${av(l, i, 44)}" alt=""><span class="t"><a href="#/u/${encodeURIComponent(l)}">${esc(l)}</a><br><span class="m">${f ? `${esc(ap(f[0])[0])} #${f[1]}: ${esc(f[2])}` : `${N(c)} commits`}</span></span><span class="m">${N(m)} merged</span></li>`).join('')}</ul>` : '<p class="empty">No one new this week.</p>'}</section>
+  <section class="box" style="margin-bottom:24px"><div class="box-h"><h2>${N(d.nw.length)} new contributors</h2><span class="sub">First PR or commit this week</span></div>${d.nw.length ? wall(d.nw.slice(0, 120).map(([l, i, m, c, f]) => [l, i, `${N(m)} merged${f ? `<br>First: ${esc(ap(f[0])[0])} #${f[1]}` : ''}`])) : '<p class="empty">No one new this week.</p>'}</section>
   <div class="grid" style="grid-template-columns:repeat(3,1fr)">
     <section class="box"><div class="box-h"><h2>Most merged</h2></div>${pl(d.top, 'PRs')}</section>
     <section class="box"><div class="box-h"><h2>Most commits</h2></div>${pl(d.cm, '')}</section>
     <section class="box"><div class="box-h"><h2>Most reviews</h2></div>${pl(d.rv, '')}</section>
   </div>
   <div class="grid g2">
-    <section class="box"><div class="box-h"><h2>Busiest apps</h2><span class="sub">Merged PRs</span></div>${(() => { const mx = Math.max(1, ...d.apps.map((x) => x[1])); return `<table><tbody>${d.apps.map(([n, v]) => `<tr class="lk" data-go="#/app/${encodeURIComponent(n)}"><td><span class="app" style="color:${ink(n)}"><img src="${ico(n)}" alt="">${esc(ap(n)[0])}</span></td><td class="n">${N(v)}</td><td style="width:40%"><div class="bar"><i style="width:${v / mx * 100}%;background:${col(n)}"></i></div></td></tr>`).join('')}</tbody></table>`; })()}</section>
-    <section class="box"><div class="box-h"><h2>Releases</h2></div>${d.rl.length ? `<ul class="feed">${d.rl.map((x) => `<li><img src="${ico(x[0])}" alt=""><span class="t"><a href="${esc(gu(x[0]))}/releases/tag/${encodeURIComponent(x[1])}" target="_blank" rel="noopener">${esc(ap(x[0])[0])} ${esc(x[1])}</a><br><span class="m">${N(x[3])} downloads</span></span><span class="m">${ago(x[2])}</span></li>`).join('')}</ul>` : '<p class="empty">No releases this week.</p>'}</section>
-  </div>
-  <section class="box"><div class="box-h"><h2>Merged this week</h2><span class="sub">Latest ${Math.min(30, d.mg)} of ${N(d.mg)}</span></div><ul class="feed">${d.recent.map(([m, rn, nr, ti, l]) => `<li><img src="${ico(rn)}" alt=""><span class="t"><a href="${esc(gu(rn))}/pull/${nr}" target="_blank" rel="noopener">${esc(ti)}</a><br><span class="m"><a href="#/u/${encodeURIComponent(l)}" class="dim">${esc(l)}</a></span></span><span class="m">${ago(m)}</span></li>`).join('')}</ul></section>`;
+    <section class="box"><div class="box-h"><h2>Busiest apps</h2><span class="sub">Merged PRs</span></div>${(() => { const a = d.apps.slice(0, 7).map(([n, v]) => [ap(n)[0], v, col(n)]), o = d.apps.slice(7).reduce((x, y) => x + y[1], 0); if (o) a.push(['Other', o, 'var(--line2)']); return donut(a, { s: 'merged', n: 8 }); })()}</section>
+    <section class="box"><div class="box-h"><h2>Releases</h2><a class="sub" href="#/releases">All</a></div>${d.rl.length ? `<ul class="feed">${d.rl.slice(0, 7).map((x) => `<li><img src="${ico(x[0])}" alt=""><span class="t"><a href="${esc(gu(x[0]))}/releases/tag/${encodeURIComponent(x[1])}" target="_blank" rel="noopener">${esc(ap(x[0])[0])} ${esc(x[1])}</a><br><span class="m">${N(x[3])} downloads</span></span><span class="m">${ago(x[2])}</span></li>`).join('')}</ul>` : '<p class="empty">No releases this week.</p>'}</section>
+  </div>`;
 }
 
 function bind() {
@@ -634,11 +721,13 @@ function bind() {
   const qi = $('#q');
   if (qi) qi.oninput = () => { q = qi.value.trim().toLowerCase(); lim = 50; relead(); };
   m.querySelectorAll('tr[data-go]').forEach((r) => r.onclick = (e) => { if (!e.target.closest('a')) location.hash = r.dataset.go; });
+  const tk = $('#tmk');
+  if (tk) tk.onclick = (e) => { const kk = e.target.dataset.k; if (!kk) return; tmk = kk; tk.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.k === kk)); $('#tmap').innerHTML = tmap(); };
   const vs = $('#vs');
   if (vs) vs.onsubmit = (e) => { e.preventDefault(); const v = $('#vsq').value.trim(); if (v) location.hash = `#/vs/${encodeURIComponent(vs.dataset.a)}/${encodeURIComponent(v)}`; };
   m.querySelectorAll('[data-cp]').forEach((b) => b.onclick = async () => { try { await navigator.clipboard.writeText(b.dataset.cp); const t = b.textContent; b.textContent = 'Copied'; setTimeout(() => b.textContent = t, 1400); } catch {} });
   const rf = $('#rf');
-  if (rf) rf.onclick = (e) => { const a = e.target.closest('button'); if (!a) return; rapp = a.dataset.r === rapp ? '' : a.dataset.r; rlim = 60; route(); };
+  if (rf) rf.onclick = (e) => { const a = e.target.closest('button'); if (!a) return; rapp = a.dataset.r === rapp ? '' : a.dataset.r; rlim = 25; route(); };
   const rm2 = $('#rmore'); if (rm2) rm2.onclick = () => { rlim += 120; route(); };
   bl();
 }

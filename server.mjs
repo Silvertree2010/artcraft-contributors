@@ -368,7 +368,7 @@ function build() {
   const rs = db.r.map((r) => r.n).filter((n) => db.p[n] || db.c[n]);
   const ri = Object.fromEntries(rs.map((n, i) => [n, i]));
   const ND = 90, d0 = Math.floor(now / 86400) - ND + 1;
-  const days = Array.from({ length: ND }, (_, i) => ({ d: (d0 + i) * 86400, o: 0, x: 0, m: new Array(rs.length).fill(0), a: new Set(), n: 0 }));
+  const days = Array.from({ length: ND }, (_, i) => ({ d: (d0 + i) * 86400, o: 0, x: 0, m: new Array(rs.length).fill(0), a: new Set(), n: 0, c: 0, r: 0 }));
   const heat = Array.from({ length: 7 }, () => new Array(24).fill(0));
   const hist = new Array(TB.length).fill(0);
   const rc = new Set(db.r.filter((r) => r.c).map((r) => r.n));
@@ -385,6 +385,7 @@ function build() {
       if (bot(l)) continue;
       const p = np(l, t);
       p.cm++; R.cm++; tc++;
+      { const ci = Math.floor(t / 86400) - d0; if (ci >= 0 && ci < ND) days[ci].c++; }
       if (now - t < 7 * 86400) p.c7++;
       if (now - t < 30 * 86400) p.c30++;
       p.cr[rn] = (p.cr[rn] || 0) + 1;
@@ -477,6 +478,7 @@ function build() {
         x[0]++; if (now - t < 30 * 86400) x[1]++; if (now - t < 7 * 86400) x[2]++;
         x[3][rn] = (x[3][rn] || 0) + 1;
         uad(l, t, 3);
+        { const ri2 = Math.floor(t / 86400) - d0; if (ri2 >= 0 && ri2 < ND) days[ri2].r++; }
       }
       if (pr && !rc.has(rn)) {
         const f = Math.min(...v.filter((x) => !bot(x[0])).map((x) => x[1]));
@@ -526,7 +528,7 @@ function build() {
     dd: Object.entries(dpd).map(([d, v]) => [+d, v]).sort((a, b) => a[0] - b[0]).slice(-120),
     rvl: rvl.slice(0, 50), dc,
     rs: rp.map((r) => ({ n: r.n, m: r.m, o: r.o, op: r.op, c: r.c.size, t: med(r.t), cm: r.cm, b: r.b, q: (db.q || {})[r.n] || null, s: (db.r.find((x) => x.n === r.n) || {}).s || 0, f: (db.r.find((x) => x.n === r.n) || {}).f || 0, w: ow(r.n), x: rc.has(r.n) ? 1 : 0, ci: db.ci[r.n] ? { n: db.ci[r.n].n, ok: db.ci[r.n].ok, med: db.ci[r.n].med, last: db.ci[r.n].last } : null, is: irs[r.n] || null, fr: med(rvr[r.n] || []), dl: db.dl[r.n] ? db.dl[r.n].t : 0 })),
-    v: ++ver, pre, days: days.map((d) => [d.d, d.o, d.x, d.m, d.a.size, d.n]), weeks, heat, hist, lead, team, recent: all.slice(0, 40), dl: dla,
+    v: ++ver, pre, days: days.map((d) => [d.d, d.o, d.x, d.m, d.a.size, d.n, d.c, d.r]), weeks, heat, hist, lead, team, recent: all.slice(0, 40), dl: dla,
   };
   Sz = zlib.gzipSync(JSON.stringify(S));
   const idx = new Map();
