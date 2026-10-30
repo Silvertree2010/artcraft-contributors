@@ -2,7 +2,7 @@
 
 Contributor stats for the ArtCraft Craft app bundle: https://artcraft.apollonet.dev
 
-Node 22, no dependencies. The server syncs all pull requests of the Craft repos via the GitHub GraphQL API and serves precomputed stats plus a static frontend with hand-drawn SVG charts.
+Node 22, no dependencies. The server syncs pull requests, reviews, commits, issues and stargazers of the Craft repos via the GitHub GraphQL API, release downloads and Actions runs via REST, Homebrew cask analytics and SonarCloud measures, and serves precomputed stats plus a static frontend with hand-drawn SVG charts. Extras: per-app pages, releases, weekly recap, comparisons, an RSS feed (`/feed.xml`), README badges (`/badge/u/<login>.svg`, `/badge/app/<repo>.svg`) and Open Graph tags on `/u/`, `/app/`, `/vs/`, `/releases`, `/week`.
 
 GitHub sign-in is optional and asks for no scopes. The access token lives only in an encrypted HttpOnly cookie; the server stores nothing about signed-in users.
 
