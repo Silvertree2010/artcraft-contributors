@@ -191,31 +191,11 @@ function heat(M = S.heat, u = 'merged') {
   return `<svg class="ch" viewBox="0 0 ${W} ${H}">${g}</svg>`;
 }
 
-function apps() {
-  const r = S.rs.filter((x) => x.o || x.cm).sort((a, b) => b.cm - a.cm || b.m - a.m), mx = Math.max(1, ...r.map((x) => x.cm));
-  return `<div class="tw"><table><thead><tr><th>App</th><th class="n">Commits</th><th class="n hide-s">Merged</th><th class="n hide-s">Stars</th><th class="n hide-s">Downloads</th><th class="hide-s">Built by</th><th style="width:14%" class="hide-s"></th></tr></thead><tbody>${r.map((x) => `<tr class="lk" data-go="#/app/${encodeURIComponent(x.n)}">
-    <td style="white-space:nowrap"><a class="app" href="#/app/${encodeURIComponent(x.n)}" style="color:${ink(x.n)};display:inline-flex;vertical-align:middle"><img src="${ico(x.n)}" alt="">${esc(ap(x.n)[0])}</a>${x.x ? ' <span class="st n" style="margin-left:8px;vertical-align:middle" title="Maintained outside ArtCraft">Community</span>' : ''}</td>
-    <td class="n">${nk('a.c.' + x.n, x.cm)}</td><td class="n hide-s dim">${nk('a.m.' + x.n, x.m)}</td><td class="n hide-s dim">${big(x.s)}</td><td class="n hide-s dim">${x.dl ? big(x.dl) : '–'}</td><td class="hide-s" style="white-space:nowrap">${x.b ? `<a class="dim" href="#/u/${encodeURIComponent(x.b)}">${esc(x.b)}</a>` : '<span class="dim">–</span>'}</td>
-    <td class="hide-s"><div class="bar"><i style="width:${x.cm / mx * 100}%;background:${col(x.n)}"></i></div></td></tr>`).join('')}</tbody></table></div>`;
-}
 const pc0 = (x) => x == null ? '–' : Math.round(x * 100) + '%';
 const QG = { OK: ['g', 'Passed'], ERROR: ['b', 'Failed'], WARN: ['w', 'Warning'] };
-function qual() {
-  const r = S.rs.filter((x) => x.q && x.q.ncloc).sort((a, b) => b.q.ncloc - a.q.ncloc);
-  if (!r.length) return '';
-  const k = (x, f, d = 0) => x == null ? '–' : f ? x.toFixed(d) + f : N(x);
-  return `<section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Code quality</h2><span class="sub">SonarCloud, main branch</span></div><div class="tw"><table><thead><tr><th>App</th><th>Quality gate</th><th class="n">Code smells</th><th class="n">Per 1k lines</th><th class="n hide-s">Bugs</th><th class="n hide-s">Vulnerabilities</th><th class="n hide-s">Coverage</th><th class="n hide-s">Duplication</th><th class="n hide-s">Lines</th></tr></thead><tbody>${r.map((x) => { const q = x.q, g = QG[q.alert_status] || ['n', '–']; return `<tr>
-    <td><a class="app" href="https://sonarcloud.io/project/overview?id=${esc(q.k)}" target="_blank" rel="noopener" style="color:${ink(x.n)}"><img src="${ico(x.n)}" alt="">${esc(ap(x.n)[0])}</a></td>
-    <td><span class="st ${g[0]}">${g[1]}</span></td><td class="n">${k(q.code_smells)}</td><td class="n">${q.code_smells != null ? (q.code_smells / q.ncloc * 1000).toFixed(1) : '–'}</td>
-    <td class="n hide-s dim">${k(q.bugs)}</td><td class="n hide-s dim">${k(q.vulnerabilities)}</td><td class="n hide-s dim">${k(q.coverage, '%', 1)}</td><td class="n hide-s dim">${k(q.duplicated_lines_density, '%', 1)}</td><td class="n hide-s dim">${k(q.ncloc)}</td></tr>`; }).join('')}</tbody></table></div></section>`;
-}
 const tmt = (x) => x[17] ? `Merged ${N(x[17])} PRs, so likely has write access` : 'Public member of the storytold org';
 const TAGS = { mmexicann: '67', wanikhawar: 'Cat', ashup1: 'Ash' };
 const tb = (x) => (x[16] ? `<span class="st n tm" data-t="${esc(tmt(x))}">Team</span>` : '') + (TAGS[x[0].toLowerCase()] ? `<span class="st n tm">${esc(TAGS[x[0].toLowerCase()])}</span>` : '');
-function team() {
-  if (!S.team || !S.team.length) return '';
-  return `<section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Team</h2><span class="sub">Presumed, from who merges PRs and public org members</span></div><ul class="team">${S.team.map(([l, i, m, pm, k]) => `<li><${k ? `a href="#/u/${encodeURIComponent(l)}"` : `a href="https://github.com/${encodeURIComponent(l)}" target="_blank" rel="noopener"`} class="who"><img loading="lazy" src="${av(l, i)}" alt="">${esc(l)}</a><span class="m">${m ? `${nk('t.' + l, m)} merges` : 'Org member'}</span></li>`).join('')}</ul></section>`;
-}
 const blt = (b) => !b || !b.length ? '<span class="dim">–</span>' : b.slice(0, 2).map((n) => `<span style="color:${ink(n)}">${esc(ap(n)[0])}</span>`).join(', ') + (b.length > 2 ? ` <span class="dim">+${b.length - 2}</span>` : '');
 
 const PI = { all: 2, '30d': 6, '7d': 5 }, CI = { all: 12, '30d': 19, '7d': 18 }, RI = { all: 20, '30d': 21, '7d': 22 };
@@ -257,63 +237,7 @@ const pct = (v, t) => t ? (v / t * 100 >= 10 ? Math.round(v / t * 100) : (v / t 
 function sbar(p, t, h = 6) {
   return `<div class="sbar" style="height:${h}px">${PL.filter(([k]) => p[k]).map(([k, n, c]) => `<i style="width:${p[k] / t * 100}%;background:${c}" data-t="${esc(`<b>${n}</b><br>${N(p[k])}, ${pct(p[k], t)}`)}"></i>`).join('')}</div>`;
 }
-function dls() {
-  const D = S.dl || []; if (!D.length) return '';
-  const P = {}, A = {}, F = {}; let T = 0, br = 0, d7 = 0, h7 = D.every((x) => x.d7 != null);
-  for (const x of D) { T += x.t; br += x.br ? x.br[0] : 0; d7 += x.d7 || 0; for (const k in x.p) P[k] = (P[k] || 0) + x.p[k]; for (const k in x.a) A[k] = (A[k] || 0) + x.a[k]; for (const k in x.f) F[k] = (F[k] || 0) + x.f[k]; }
-  const ot = (P.bsd || 0) + (P.web || 0) + (P.cli || 0) + (P.oth || 0);
-  const lst = (o, f, n) => { const e = Object.entries(o).sort((a, b) => b[1] - a[1]).slice(0, n), mx = Math.max(1, ...e.map((x) => x[1])); return `<table><tbody>${e.map(([k, v]) => `<tr><td>${f(k)}</td><td class="n">${N(v)}</td><td class="n dim">${pct(v, T)}</td><td style="width:40%"><div class="bar"><i style="width:${v / mx * 100}%;background:var(--accent)"></i></div></td></tr>`).join('')}</tbody></table>`; };
-  const fk = (k) => { const [p, f] = k.split(':'); return `${esc(FN[f] || f)} <span class="dim">${esc((PL.find((x) => x[0] === p) || [, p])[1])}</span>`; };
-  const r = D.slice().sort((a, b) => b.t - a.t), mx = Math.max(1, ...r.map((x) => x.t));
-  return `<section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Downloads</h2><span class="sub">GitHub release assets, all versions</span></div>
-  <div class="kpi" style="margin-bottom:20px">
-    <div><span class="lbl">Total</span><b>${nk('d.t', T)}</b></div>
-    ${h7 ? `<div><span class="lbl">Last 7 days</span><b>${nk('d.7', d7)}</b></div>` : ''}
-    <div><span class="lbl">Windows</span><b>${big(P.win)}</b><span class="sub">${pct(P.win, T)}</span></div>
-    <div><span class="lbl">macOS</span><b>${big(P.mac)}</b><span class="sub">${pct(P.mac, T)}</span></div>
-    <div><span class="lbl">Linux</span><b>${big(P.lin)}</b><span class="sub">${pct(P.lin, T)}</span></div>
-    <div><span class="lbl">BSD, Web, CLI</span><b>${big(ot)}</b><span class="sub">${pct(ot, T)}</span></div>
-    ${h7 ? '' : `<div><span class="lbl">Homebrew, 30d</span><b>${nk('d.br', br)}</b><span class="sub">installs</span></div>`}
-  </div>
-  ${(S.dd || []).length >= 2 ? `<h3 class="h3">Per day</h3>${bch(S.dd, { u: 'downloads', H: 150 })}<div style="height:20px"></div>` : ''}
-  ${sbar(P, T, 14)}<div class="leg">${PL.filter(([k]) => P[k]).map(([k, n, c]) => `<span><i style="background:${c}"></i>${n} ${pct(P[k], T)}</span>`).join('')}</div>
-  <div class="grid g2" style="margin:20px 0 0">
-    <div><h3 class="h3">Package formats</h3>${lst(F, fk, 10)}</div>
-    <div><h3 class="h3">Architectures</h3>${lst(A, (k) => esc(k === 'universal' ? 'Universal (macOS)' : k), 6)}</div>
-  </div>
-  <h3 class="h3" style="margin-top:20px">Per app</h3>
-  <div class="tw"><table><thead><tr><th>App</th><th class="n">Downloads</th>${h7 ? '<th class="n hide-s">7 days</th>' : ''}<th class="hide-s" style="width:22%">Platforms</th><th class="n hide-s">Windows</th><th class="n hide-s">macOS</th><th class="n hide-s">Linux</th><th class="n hide-s">Homebrew 30d</th><th class="hide-s">Latest</th><th class="n hide-s">Releases</th></tr></thead><tbody>${r.map((x) => `<tr>
-    <td style="white-space:nowrap"><a class="app" href="#/app/${encodeURIComponent(x.n)}" style="color:${ink(x.n)}"><img src="${ico(x.n)}" alt="">${esc(ap(x.n)[0])}</a></td>
-    <td class="n">${nk('d.a.' + x.n, x.t)}</td>${h7 ? `<td class="n hide-s dim">${N(x.d7)}</td>` : ''}<td class="hide-s">${sbar(x.p, x.t)}</td>
-    <td class="n hide-s dim">${big(x.p.win)}</td><td class="n hide-s dim">${big(x.p.mac)}</td><td class="n hide-s dim">${big(x.p.lin)}</td><td class="n hide-s dim">${x.br ? N(x.br[0]) : '–'}</td>
-    <td class="hide-s" style="white-space:nowrap">${x.rl[0] ? `<a class="dim" href="${esc(gu(x.n))}/releases/tag/${encodeURIComponent(x.rl[0][0])}" target="_blank" rel="noopener" data-t="${esc(`<b>${x.rl[0][0]}</b><br>${dt(x.rl[0][1], 1)}<br>${N(x.rl[0][2])} downloads`)}">${esc(x.rl[0][0].replace(/^[a-z-]*v(?=\d)/i, 'v'))}</a> <span class="dim">${ago(x.rl[0][1])}</span>` : '–'}</td><td class="n hide-s dim">${x.nr}</td></tr>`).join('')}</tbody></table></div>
-  </section>`;
-}
-
-function rvl() {
-  const r = (S.rvl || []).slice(0, 12); if (!r.length) return '<p class="empty">Reviews are still syncing.</p>';
-  const mx = Math.max(1, ...r.map((x) => x[2]));
-  return `<table><thead><tr><th>Reviewer</th><th class="n">Reviews</th><th class="n hide-s">30 days</th><th class="hide-s">Mostly</th><th style="width:22%" class="hide-s"></th></tr></thead><tbody>${r.map((x) => `<tr class="lk" data-go="#/u/${encodeURIComponent(x[0])}"><td><span class="who"><img loading="lazy" src="${av(x[0], x[1])}" alt="">${esc(x[0])}</span></td><td class="n">${nk('rv.' + x[0], x[2])}</td><td class="n hide-s dim">${N(x[3])}</td><td class="hide-s" style="color:${ink(x[5])}">${esc(ap(x[5])[0])}</td><td class="hide-s"><div class="bar"><i style="width:${x[2] / mx * 100}%;background:var(--accent)"></i></div></td></tr>`).join('')}</tbody></table>`;
-}
-function iss() {
-  const i = S.is;
-  return `<div class="mini">
-    <div><span class="lbl">Open</span><b>${nk('i.o', i.o)}</b></div>
-    <div><span class="lbl">Opened, 30d</span><b>${nk('i.o30', i.o30)}</b></div>
-    <div><span class="lbl">Closed, 30d</span><b>${nk('i.x30', i.x30)}</b></div>
-    <div><span class="lbl">First reply</span><b>${du(i.fr)}</b><span class="sub">median, 30d</span></div>
-    <div><span class="lbl">Open bugs</span><b>${N(i.b)}</b><span class="sub">${pct(i.b, i.o)} of open</span></div>
-    <div><span class="lbl">Open features</span><b>${N(i.f)}</b><span class="sub">${pct(i.f, i.o)} of open</span></div>
-  </div>
-  <h3 class="h3" style="margin-top:18px">Open per app</h3>${(() => { const r = S.rs.filter((x) => x.is && x.is.o).sort((a, b) => b.is.o - a.is.o).slice(0, 8), mx = Math.max(1, ...r.map((x) => x.is.o)); return `<table><tbody>${r.map((x) => `<tr><td><a class="app" href="#/app/${encodeURIComponent(x.n)}" style="color:${ink(x.n)}"><img src="${ico(x.n)}" alt="">${esc(ap(x.n)[0])}</a></td><td class="n">${N(x.is.o)}</td><td class="n dim hide-s">${x.is.b} bugs</td><td style="width:35%"><div class="bar"><i style="width:${x.is.o / mx * 100}%;background:${col(x.n)}"></i></div></td></tr>`).join('')}</tbody></table>`; })()}`;
-}
 const cir = (c) => c && c.n ? c.ok / c.n : null;
-function cis() {
-  const r = S.rs.filter((x) => x.ci && x.ci.n).sort((a, b) => cir(a.ci) - cir(b.ci));
-  if (!r.length) return '<p class="empty">No CI data yet.</p>';
-  return `<table><thead><tr><th>App</th><th class="n">Pass rate</th><th class="n hide-s">Runs</th><th class="n hide-s">Median run</th><th class="hide-s">Last</th></tr></thead><tbody>${r.map((x) => { const v = cir(x.ci); return `<tr><td><a class="app" href="#/app/${encodeURIComponent(x.n)}" style="color:${ink(x.n)}"><img src="${ico(x.n)}" alt="">${esc(ap(x.n)[0])}</a></td><td class="n"><span style="color:var(${v >= .9 ? '--good' : v >= .7 ? '--muted' : '--bad'})">${pc0(v)}</span></td><td class="n hide-s dim">${N(x.ci.n)}</td><td class="n hide-s dim">${du(x.ci.med)}</td><td class="hide-s" style="white-space:nowrap">${x.ci.last ? `<span class="st ${x.ci.last[0] ? 'g' : 'b'}">${x.ci.last[0] ? 'Passed' : 'Failed'}</span> <span class="dim">${ago(x.ci.last[1])}</span>` : '–'}</td></tr>`; }).join('')}</tbody></table>`;
-}
-
 function dcs() {
   const D = S.dc; if (!D) return '';
   const W = 600, H = 150, L = 40, B = 22, T = 6, n = D.days.length || 1, bw = (W - L) / n, st = Math.max(1, Math.round(n / 6));
@@ -329,10 +253,10 @@ function dcs() {
     g += `<rect class="hv" x="${x}" y="${T}" width="${bw}" height="${H - T - B}" data-t="${esc(`<b>${dt(d[0], 1)}</b><br>${N(d[1])} messages<br>${N(d[2])} people${d[3] ? '<br>Partly missing' : ''}`)}"/>`;
     if (i % st === 0) g += `<text x="${x}" y="${H - 6}">${dt(d[0])}</text>`;
   });
-  return `<section class="box"><div class="box-h"><h2>Discord</h2><span class="sub">Public channels, since ${dt(D.f, 1)}</span></div>
+  return `<section class="box"><div class="box-h"><h2>Discord</h2><span class="sub">Since ${dt(D.f, 1)}</span></div>
   <div class="trio"><div><b>${nk('dc.m7', D.m7)}</b><span>messages, 7 days</span></div><div><b>${nk('dc.u7', D.u7)}</b><span>people, 7 days</span></div><div><b>${D.a7 == null ? '–' : N(D.a7)}</b><span>people per day</span></div></div>
   <svg class="ch" viewBox="0 0 ${W} ${H}">${g}<polyline points="${pts}" fill="none" stroke="var(--strong)" stroke-width="1.5" pointer-events="none"/></svg>
-  <p class="note" style="margin:8px 0 0"><span style="color:var(--accent-ink)">Messages</span> as bars, people as line. Grey days are incomplete.</p></section>`;
+</section>`;
 }
 
 function spark(v, c = 'var(--accent)') {
@@ -363,7 +287,7 @@ function clock(A, Bv, la, lb) {
   }
   for (const h of [0, 6, 12, 18]) { const an = (h / 24) * Math.PI * 2 - Math.PI / 2; g += `<text x="${C + 116 * Math.cos(an)}" y="${C + 116 * Math.sin(an) + 3}" text-anchor="middle">${String(h).padStart(2, '0')}</text>`; }
   g += `<circle cx="${C}" cy="${C}" r="29" fill="none" stroke="var(--line)"/><circle cx="${C}" cy="${C}" r="77" fill="none" stroke="var(--line)"/>`;
-  return `<svg class="ch clk" viewBox="-6 -6 252 252">${g}</svg><p class="note" style="margin:8px 0 0"><span style="color:var(--accent-ink)">Inner: ${la}</span>${b ? `, outer: ${lb}` : ''}. Your local time.</p>`;
+  return `<svg class="ch clk" viewBox="-6 -6 252 252">${g}</svg><p class="note" style="margin:8px 0 0;text-align:center"><span style="color:var(--accent-ink)">${la}</span>${b ? ` · <span style="color:var(--strong)">${lb}</span>` : ''}</p>`;
 }
 function sqz(it, x, y, w, h) {
   const out = []; let rest = it.slice();
@@ -415,9 +339,9 @@ function overview() {
   </div>
   <section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Merged per day</h2></div><div id="daily">${daily()}</div>${legend()}</section>
   <div class="grid g3">
-    <section class="box"><div class="box-h"><h2>Where work lands</h2><span class="sub">Merged, 30 days</span></div>${donut(at, { s: 'merged', n: 13 })}</section>
-    <section class="box"><div class="box-h"><h2>Downloads</h2><span class="sub">By platform</span></div>${donut(PL.filter(([kk]) => P[kk]).map(([kk, n, c]) => [n, P[kk], c]), { c: big(DT), s: 'downloads' })}</section>
-    <section class="box"><div class="box-h"><h2>Around the clock</h2></div>${clock(S.heat, dc && dc.h, 'merged PRs', 'Discord messages')}</section>
+    <section class="box"><div class="box-h"><h2>Where work lands</h2><span class="sub">30 days</span></div>${donut(at, { s: 'merged', n: 13 })}</section>
+    <section class="box"><div class="box-h"><h2>Downloads</h2></div>${donut(PL.filter(([kk]) => P[kk]).map(([kk, n, c]) => [n, P[kk], c]), { c: big(DT), s: 'downloads' })}</section>
+    <section class="box"><div class="box-h"><h2>Around the clock</h2></div>${clock(S.heat, dc && dc.h, 'PRs', 'Discord')}</section>
   </div>
   <div class="grid g32">
     <section class="box"><div class="box-h"><h2>Leaderboard</h2>${segs()}</div><div id="lead">${lead(false)}</div></section>
@@ -425,50 +349,15 @@ function overview() {
   </div>
   <section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Apps</h2><div class="seg" id="tmk">${[['cm', 'Commits'], ['m', 'Merged'], ['dl', 'Downloads'], ['s', 'Stars']].map(([kk, t]) => `<button data-k="${kk}" class="${tmk === kk ? 'on' : ''}">${t}</button>`).join('')}</div></div><div id="tmap">${tmap()}</div></section>
   <div class="grid g3">
-    <section class="box"><div class="box-h"><h2>Contributors</h2><span class="sub"><span style="color:var(--accent-ink)">Total</span>, active per day</span></div>${growth()}</section>
+    <section class="box"><div class="box-h"><h2>Contributors</h2></div>${growth()}</section>
     <section class="box"><div class="box-h"><h2>Time to merge</h2><span class="sub">Median ${du(k.t)}</span></div>${hist()}</section>
     <section class="box"><div class="box-h"><h2>Open issues</h2>${i.sy ? '<span class="sub">Syncing</span>' : `<span class="sub">First reply ${du(i.fr)}</span>`}</div>${donut([['Bugs', i.b, 'var(--bad)'], ['Features', i.f, 'var(--accent)'], ['Roadmap', i.t || 0, 'var(--good)'], ['Questions', i.q || 0, '#8b5cf6'], ['Other', i.o - i.b - i.f - (i.q || 0) - (i.t || 0), 'var(--line2)']], { c: big(i.o), s: 'open' })}<p class="note" style="margin:10px 0 0">${N(i.o30)} opened and ${N(i.x30)} closed in 30 days.</p></section>
   </div>
   <div class="grid g32">
     ${dc ? dcs() : '<div></div>'}
-    ${S.team && S.team.length ? `<section class="box"><div class="box-h"><h2>Team</h2><span class="sub">Presumed, from merges and org membership</span></div>${wall(S.team.map(([l, ii, m]) => [l, ii, m ? `${N(m)} merges` : 'Org member']))}</section>` : ''}
+    ${S.team && S.team.length ? `<section class="box"><div class="box-h"><h2>Team</h2></div>${wall(S.team.map(([l, ii, m]) => [l, ii, m ? `${N(m)} merges` : 'Org member']))}</section>` : ''}
   </div>`;
 }
-function overview0() {
-  const k = S.k;
-  return `<div class="top"><div><h1>Craft App Bundle contributions</h1></div><span class="sub"><i class="lv"></i>Live${S.sync ? `, syncing ${S.sync} repos` : ''}, updated <span id="upd">${sa(S.at)}</span></span></div>
-  ${S.err ? `<div class="err">GitHub sync error: ${esc(S.err)}</div>` : ''}
-  <div class="kpi">
-    <div><span class="lbl">Contributors</span><b>${nk('k.c', k.c)}</b>${dlt(k.n7)}</div>
-    <div><span class="lbl">Merged PRs</span><b>${nk('k.m', k.m)}</b>${dlt(k.m7)}</div>
-    <div><span class="lbl">Commits</span><b>${nk('k.cm', k.cm)}</b>${dlt(k.c7)}</div>
-    <div><span class="lbl">Reviews</span><b>${nk('k.rv', k.rv)}</b>${dlt(k.rv7)}</div>
-    <div><span class="lbl">Stars</span><b>${nk('k.st', k.st)}</b>${S.st.sy ? '' : dlt(k.s7)}</div>
-    <div><span class="lbl">Downloads</span><b>${big((S.dl || []).reduce((a, x) => a + x.t, 0))}</b>${dlt((S.dd || []).slice(-7).reduce((a, x) => a + x[1], 0))}</div>
-  </div>
-  <section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Merged per day</h2></div><div id="daily">${daily()}</div>${legend()}</section>
-  <div class="grid g32">
-    <section class="box"><div class="box-h"><h2>Contributors</h2><span class="sub"><span style="color:var(--accent-ink)">Total</span>, active per day</span></div>${growth()}</section>
-    <section class="box"><div class="box-h"><h2>Time to merge</h2><span class="sub">Median ${du(k.t)}, first review ${du(k.fr)}, last 30 days</span></div>${hist()}</section>
-  </div>
-  ${dls()}
-  <section class="box" style="margin-bottom:24px"><div class="box-h"><h2>When PRs get merged</h2><span class="sub">Your local time</span></div>${heat()}</section>
-  <section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Leaderboard</h2>${segs()}</div><div id="lead">${lead(false)}</div></section>
-  <div class="grid g2">
-    <section class="box"><div class="box-h"><h2>Reviewers</h2><span class="sub">Reviews on someone else's PR</span></div>${rvl()}</section>
-    <section class="box"><div class="box-h"><h2>Issues</h2>${S.is.sy ? `<span class="sub">Syncing ${S.is.sy} repos</span>` : ''}</div>${iss()}</section>
-  </div>
-  <div class="grid g2">
-    <section class="box"><div class="box-h"><h2>Stars</h2><span class="sub">${S.st.sy ? `Syncing history, ${S.st.sy} repos left` : `${N(S.st.t)} over time`}</span></div>${S.st.sy && S.st.wk.length < 2 ? '<p class="empty">Star history is still loading.</p>' : lch(S.st.wk, { u: 'stars' })}${S.st.sy ? '' : `<h3 class="h3" style="margin-top:16px">New stars per day</h3>${bch(S.days.map((d, i) => [d[0], S.st.d[i]]).slice(vi()), { W: 560, H: 120, u: 'stars', lb: 5 })}`}</section>
-    <section class="box"><div class="box-h"><h2>CI on main</h2><span class="sub">GitHub Actions, push runs, last 14 days</span></div>${cis()}</section>
-  </div>
-  ${dcs()}
-  ${team()}
-  ${qual()}
-  <section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Apps</h2></div>${apps()}</section>
-  <section class="box"><div class="box-h"><h2>Latest merges</h2></div>${feed()}</section>`;
-}
-
 function people() {
   return `<div class="top"><h1>Leaderboard</h1><span class="sub">${N(S.lead.length)} contributors</span></div>
   <section class="box"><div class="box-h"><input class="srch" id="q" type="search" placeholder="Find a GitHub user" value="${esc(q)}">${segs()}</div><div id="lead">${lead(true)}</div></section>`;
@@ -548,14 +437,14 @@ function prof(d, l, mine) {
     <div><span class="lbl">Merged</span><b>${nk('p.m', r[2])}</b><span class="sub">${pc0(r[14])} merge rate, ${N(r[15])} reverted</span></div>
     <div><span class="lbl">Commits</span><b>${nk('p.c', r[12])}</b></div>
     <div><span class="lbl">Reviews</span><b>${nk('p.r', r[20] || 0)}</b><span class="sub">${N(r[23] || 0)} issues opened</span></div>
-    <div><span class="lbl">Streak</span><b>${N(sk.cu)} <span class="sub" style="font:400 14px Inter;display:inline">days</span></b><span class="sub">longest ${N(sk.lg)}, ${N(sk.n)} active days</span></div>
+    <div><span class="lbl">Streak</span><b>${N(sk.cu)} <span class="sub" style="font:400 14px Inter;display:inline">days</span></b><span class="sub">longest ${N(sk.lg)}</span></div>
     <div><span class="lbl">Median merge</span><b>${du(r[11])}</b></div>
   </div>
-  <section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Activity</h2><span class="sub">Commits, PRs and reviews per day</span></div>${cal(d.ua || {})}</section>
-  ${d.prs.length ? `<section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Per day</h2><span class="sub"><span style="color:var(--accent-ink)">Merged</span> and opened</span></div>${weekly(d.prs)}</section>` : ''}
+  <section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Activity</h2></div>${cal(d.ua || {})}</section>
+  ${d.prs.length ? `<section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Per day</h2></div>${weekly(d.prs)}</section>` : ''}
   <div class="grid g32">
     <section class="box"><div class="box-h"><h2>Pull requests</h2><span class="sub">${N(d.prs.length)}</span></div>${d.prs.length ? '' : '<p class="empty">None.</p>'}<ul class="feed">${d.prs.slice(0, lp).map((p) => `<li><img src="${ico(p[0])}" alt="${esc(ap(p[0])[0])}" title="${esc(ap(p[0])[0])}"><span class="t"><a href="${esc(gu(p[0]))}/pull/${p[1]}" target="_blank" rel="noopener">${esc(p[5])}</a><br><span class="m">${esc(ap(p[0])[0])} #${p[1]}, ${dt(p[2], 1)}${p[3] ? `, merged in ${du(p[3] - p[2])}` : ''}</span></span>${stat(p)}</li>`).join('')}</ul>${d.prs.length > lp ? `<a class="btn more" target="_blank" rel="noopener" href="https://github.com/pulls?q=${encodeURIComponent(`is:pr author:${l} org:storytold${S.rs.filter((x) => x.x).map((x) => ` repo:${x.w}/${x.n}`).join('')}`)}">All on GitHub</a>` : ''}</section>
-    <section class="box"><div class="box-h"><h2>Apps</h2><span class="sub">By commits</span></div>${ab.length ? (() => { const a = ab.slice(0, 10).map(([n, [m, c2]]) => [ap(n)[0], c2 || m, col(n)]), o = ab.slice(10).reduce((x, y) => x + (y[1][1] || y[1][0]), 0); if (o) a.push(['Other', o, 'var(--line2)']); return donut(a, { s: 'commits', n: 11 }); })() : '<p class="empty">Nothing yet.</p>'}</section>
+    <section class="box"><div class="box-h"><h2>Apps</h2></div>${ab.length ? (() => { const a = ab.slice(0, 10).map(([n, [m, c2]]) => [ap(n)[0], c2 || m, col(n)]), o = ab.slice(10).reduce((x, y) => x + (y[1][1] || y[1][0]), 0); if (o) a.push(['Other', o, 'var(--line2)']); return donut(a, { s: 'commits', n: 11 }); })() : '<p class="empty">Nothing yet.</p>'}</section>
   </div>
   <div class="grid g2">
     <form class="box" id="vs" data-a="${esc(r[0])}"><div class="box-h"><h2>Compare</h2></div><div style="display:flex;gap:8px;flex-wrap:wrap"><input class="srch" id="vsq" placeholder="Other GitHub user" autocomplete="off" list="vsl"><datalist id="vsl">${S ? S.lead.slice(0, 200).map((x) => `<option value="${esc(x[0])}">`).join('') : ''}</datalist><button class="btn">Compare</button></div></form>
@@ -638,11 +527,11 @@ function apage(d) {
   const md = `[![${ap(n)[0]} downloads](${location.origin}/badge/app/${n}.svg)](${location.origin}/app/${n})`;
   return `<div class="prof"><img src="${ico(n)}" alt="" style="border:0"><div class="x"><h1 style="color:${ink(n)}">${esc(ap(n)[0])}${d.x ? ' <span class="st n tm">Community</span>' : ''}</h1><div class="sub">${esc(d.d)}${d.d ? '. ' : ''}<a href="${esc(gu(n))}" target="_blank" rel="noopener">${esc(d.w)}/${esc(n)} on GitHub</a></div></div><button class="btn" data-cp="${esc(location.origin + '/app/' + encodeURIComponent(n))}">Copy link</button></div>
   ${kp}
-  <section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Per day</h2><span class="sub"><span style="color:${ink(n)}">Merged</span>, commits as line</span></div>${dual(ti, c)}</section>
+  <section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Per day</h2></div>${dual(ti, c)}</section>
   <div class="grid g3">
-    <section class="box"><div class="box-h"><h2>Downloads</h2><span class="sub">By platform</span></div>${d.dl ? donut(PL.filter(([k]) => d.dl.p[k]).map(([k, nm, cc]) => [nm, d.dl.p[k], cc]), { c: big(d.dl.t), s: 'downloads' }) : '<p class="empty">No releases.</p>'}</section>
+    <section class="box"><div class="box-h"><h2>Downloads</h2></div>${d.dl ? donut(PL.filter(([k]) => d.dl.p[k]).map(([k, nm, cc]) => [nm, d.dl.p[k], cc]), { c: big(d.dl.t), s: 'downloads' }) : '<p class="empty">No releases.</p>'}</section>
     <section class="box"><div class="box-h"><h2>Open issues</h2>${i ? `<span class="sub">First reply ${du(i.fr)}</span>` : ''}</div>${i ? donut([['Bugs', i.b, 'var(--bad)'], ['Features', i.f, 'var(--accent)'], ['Roadmap', i.t || 0, 'var(--good)'], ['Questions', i.q || 0, '#8b5cf6'], ['Other', i.o - i.b - i.f - (i.q || 0) - (i.t || 0), 'var(--line2)']], { c: big(i.o), s: 'open' }) + `<p class="note" style="margin:10px 0 0">${N(i.o30)} opened, ${N(i.x30)} closed in 30 days.</p>` : '<p class="empty">Still syncing.</p>'}</section>
-    <section class="box"><div class="box-h"><h2>CI on main</h2><span class="sub">14 days</span></div>${ci && ci.n ? donut([['Passed', ci.ok, 'var(--good)'], ['Failed', ci.n - ci.ok, 'var(--bad)']], { c: pc0(ci.ok / ci.n), s: `${N(ci.n)} runs` }) + `<p class="note" style="margin:10px 0 0">Median run ${du(ci.med)}.${ci.wf.filter(([, [o, f]]) => f).length ? ' Failing most: ' + esc(ci.wf.slice().sort((a, b) => b[1][1] - a[1][1])[0][0]) + '.' : ''}</p>` : '<p class="empty">No runs.</p>'}</section>
+    <section class="box"><div class="box-h"><h2>CI, 14 days</h2></div>${ci && ci.n ? donut([['Passed', ci.ok, 'var(--good)'], ['Failed', ci.n - ci.ok, 'var(--bad)']], { c: pc0(ci.ok / ci.n), s: `${N(ci.n)} runs` }) + `<p class="note" style="margin:10px 0 0">Median run ${du(ci.med)}.${ci.wf.filter(([, [o, f]]) => f).length ? ' Failing most: ' + esc(ci.wf.slice().sort((a, b) => b[1][1] - a[1][1])[0][0]) + '.' : ''}</p>` : '<p class="empty">No runs.</p>'}</section>
   </div>
   <div class="grid g32">
     <section class="box"><div class="box-h"><h2>Top contributors</h2></div>${ppl}</section>
@@ -697,14 +586,14 @@ function wpage(d) {
     <div><span class="lbl">Issues</span><b>${N(d.is[0])}</b><span class="sub">opened, ${N(d.is[1])} closed</span></div>
   </div>
   ${dsum ? `<p class="note">${N(dsum)} downloads this week.</p>` : ''}
-  <section class="box" style="margin-bottom:24px"><div class="box-h"><h2>${N(d.nw.length)} new contributors</h2><span class="sub">First PR or commit this week</span></div>${d.nw.length ? wall(d.nw.slice(0, 120).map(([l, i, m, c, f]) => [l, i, `${N(m)} merged${f ? `<br>First: ${esc(ap(f[0])[0])} #${f[1]}` : ''}`])) : '<p class="empty">No one new this week.</p>'}</section>
+  <section class="box" style="margin-bottom:24px"><div class="box-h"><h2>${N(d.nw.length)} new contributors</h2></div>${d.nw.length ? wall(d.nw.slice(0, 120).map(([l, i, m, c, f]) => [l, i, `${N(m)} merged${f ? `<br>First: ${esc(ap(f[0])[0])} #${f[1]}` : ''}`])) : '<p class="empty">No one new this week.</p>'}</section>
   <div class="grid" style="grid-template-columns:repeat(3,1fr)">
     <section class="box"><div class="box-h"><h2>Most merged</h2></div>${pl(d.top, 'PRs')}</section>
     <section class="box"><div class="box-h"><h2>Most commits</h2></div>${pl(d.cm, '')}</section>
     <section class="box"><div class="box-h"><h2>Most reviews</h2></div>${pl(d.rv, '')}</section>
   </div>
   <div class="grid g2">
-    <section class="box"><div class="box-h"><h2>Busiest apps</h2><span class="sub">Merged PRs</span></div>${(() => { const a = d.apps.slice(0, 12).map(([n, v]) => [ap(n)[0], v, col(n)]), o = d.apps.slice(12).reduce((x, y) => x + y[1], 0); if (o) a.push(['Other', o, 'var(--line2)']); return donut(a, { s: 'merged', n: 13 }); })()}</section>
+    <section class="box"><div class="box-h"><h2>Busiest apps</h2></div>${(() => { const a = d.apps.slice(0, 12).map(([n, v]) => [ap(n)[0], v, col(n)]), o = d.apps.slice(12).reduce((x, y) => x + y[1], 0); if (o) a.push(['Other', o, 'var(--line2)']); return donut(a, { s: 'merged', n: 13 }); })()}</section>
     <section class="box"><div class="box-h"><h2>Releases</h2><a class="sub" href="#/releases">All</a></div>${d.rl.length ? `<ul class="feed">${d.rl.slice(0, 7).map((x) => `<li><img src="${ico(x[0])}" alt=""><span class="t"><a href="${esc(gu(x[0]))}/releases/tag/${encodeURIComponent(x[1])}" target="_blank" rel="noopener">${esc(ap(x[0])[0])} ${esc(x[1])}</a><br><span class="m">${N(x[3])} downloads</span></span><span class="m">${ago(x[2])}</span></li>`).join('')}</ul>` : '<p class="empty">No releases this week.</p>'}</section>
   </div>`;
 }
