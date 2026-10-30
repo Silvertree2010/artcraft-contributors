@@ -173,9 +173,9 @@ function hist() {
   return `<svg class="ch" viewBox="0 0 ${W} ${H}">${g}</svg>`;
 }
 
-function heat() {
+function heat(M = S.heat, u = 'merged') {
   const off = -new Date().getTimezoneOffset() / 60, m = Array.from({ length: 7 }, () => new Array(24).fill(0));
-  S.heat.forEach((r, d) => r.forEach((v, h) => { let lh = h + off, ld = d + Math.floor(lh / 24); lh = ((lh % 24) + 24) % 24; ld = ((ld % 7) + 7) % 7; m[ld][Math.floor(lh)] += v; }));
+  M.forEach((r, d) => r.forEach((v, h) => { let lh = h + off, ld = d + Math.floor(lh / 24); lh = ((lh % 24) + 24) % 24; ld = ((ld % 7) + 7) % 7; m[ld][Math.floor(lh)] += v; }));
   const dn = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], mx = Math.max(1, ...m.flat());
   const W = 900, L = 36, T = 4, cw = (W - L) / 24, chh = 22, H = T + 7 * chh + 20;
   let g = '';
@@ -183,7 +183,7 @@ function heat() {
     g += `<text x="0" y="${T + d * chh + 15}">${dn[d]}</text>`;
     r.forEach((v, h) => {
       const a = v ? .1 + .9 * Math.sqrt(v / mx) : 0;
-      g += `<rect x="${L + h * cw + 1}" y="${T + d * chh + 1}" width="${cw - 2}" height="${chh - 2}" fill="var(--accent)" fill-opacity="${a.toFixed(3)}" data-t="${esc(`<b>${dn[d]} ${String(h).padStart(2, '0')}:00</b><br>${N(v)} merged`)}"/>`;
+      g += `<rect x="${L + h * cw + 1}" y="${T + d * chh + 1}" width="${cw - 2}" height="${chh - 2}" fill="var(--accent)" fill-opacity="${a.toFixed(3)}" data-t="${esc(`<b>${dn[d]} ${String(h).padStart(2, '0')}:00</b><br>${N(v)} ${u}`)}"/>`;
       if (!v) g += `<rect x="${L + h * cw + 1}" y="${T + d * chh + 1}" width="${cw - 2}" height="${chh - 2}" fill="var(--sunken)" pointer-events="none"/>`;
     });
   });
@@ -311,6 +311,36 @@ function cis() {
   return `<table><thead><tr><th>App</th><th class="n">Pass rate</th><th class="n hide-s">Runs</th><th class="n hide-s">Median run</th><th class="hide-s">Last</th></tr></thead><tbody>${r.map((x) => { const v = cir(x.ci); return `<tr><td><a class="app" href="#/app/${encodeURIComponent(x.n)}" style="color:${ink(x.n)}"><img src="${ico(x.n)}" alt="">${esc(ap(x.n)[0])}</a></td><td class="n"><span style="color:var(${v >= .9 ? '--good' : v >= .7 ? '--muted' : '--bad'})">${pc0(v)}</span></td><td class="n hide-s dim">${N(x.ci.n)}</td><td class="n hide-s dim">${du(x.ci.med)}</td><td class="hide-s" style="white-space:nowrap">${x.ci.last ? `<span class="st ${x.ci.last[0] ? 'g' : 'b'}">${x.ci.last[0] ? 'Passed' : 'Failed'}</span> <span class="dim">${ago(x.ci.last[1])}</span>` : '–'}</td></tr>`; }).join('')}</tbody></table>`;
 }
 
+function dcs() {
+  const D = S.dc; if (!D) return '';
+  const W = 900, H = 180, L = 40, B = 22, T = 6, n = D.days.length || 1, bw = (W - L) / n, st = Math.max(1, Math.round(n / 7));
+  const { top, t } = ax(Math.max(1, ...D.days.map((d) => d[1])));
+  const ua = ax(Math.max(1, ...D.days.map((d) => d[2])));
+  const y = (x, tp = top) => T + (H - T - B) * (1 - x / tp);
+  let g = t.map((x) => `<line class="gl" x1="${L}" x2="${W}" y1="${y(x)}" y2="${y(x)}"/><text x="${L - 6}" y="${y(x) + 3}" text-anchor="end">${big(x)}</text>`).join(''), pts = '';
+  D.days.forEach((d, i) => {
+    const x = L + i * bw;
+    if (d[3]) g += `<rect x="${x + .5}" y="${T}" width="${Math.max(1, bw - 1.5)}" height="${H - T - B}" fill="var(--sunken)"/>`;
+    g += `<rect x="${x + .5}" y="${y(d[1])}" width="${Math.max(1, bw - 1.5)}" height="${(H - T - B) * d[1] / top}" fill="${d[3] ? 'var(--line2)' : 'var(--accent)'}"/>`;
+    if (!d[3]) pts += `${x + bw / 2},${y(d[2], ua.top)} `;
+    g += `<rect class="hv" x="${x}" y="${T}" width="${bw}" height="${H - T - B}" data-t="${esc(`<b>${dt(d[0], 1)}</b><br>${N(d[1])} messages<br>${N(d[2])} people${d[3] ? '<br>Partly missing' : ''}`)}"/>`;
+    if (i % st === 0) g += `<text x="${x}" y="${H - 6}">${dt(d[0])}</text>`;
+  });
+  const mx = Math.max(1, ...D.ch7.map((x) => x[1]));
+  return `<section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Discord</h2><span class="sub">ArtCraft server, public channels, since ${dt(D.f, 1)}</span></div>
+  <div class="mini" style="margin-bottom:20px">
+    <div><span class="lbl">Messages, 7d</span><b>${nk('dc.m7', D.m7)}</b></div>
+    <div><span class="lbl">People, 7d</span><b>${nk('dc.u7', D.u7)}</b><span class="sub">wrote at least once</span></div>
+    <div><span class="lbl">People per day</span><b>${D.a7 == null ? '–' : N(D.a7)}</b><span class="sub">average, last full days</span></div>
+  </div>
+  <h3 class="h3">Per day</h3><svg class="ch" viewBox="0 0 ${W} ${H}">${g}<polyline points="${pts}" fill="none" stroke="var(--strong)" stroke-width="1.5" pointer-events="none"/></svg>
+  <p class="note" style="margin:8px 0 0"><span style="color:var(--accent-ink)">Messages</span> as bars, people as line. People only on complete days. Grey days are incomplete.</p>
+  <div class="grid g2" style="margin:20px 0 0">
+    <div><h3 class="h3">Busiest channels, 7 days</h3><table><tbody>${D.ch7.map(([c, v]) => `<tr><td>#${esc(c)}</td><td class="n">${N(v)}</td><td style="width:40%"><div class="bar"><i style="width:${v / mx * 100}%;background:var(--accent)"></i></div></td></tr>`).join('')}</tbody></table></div>
+    <div><h3 class="h3">When people write</h3>${heat(D.h, 'messages')}<p class="note" style="margin:6px 0 0">Your local time</p></div>
+  </div></section>`;
+}
+
 function overview() {
   const k = S.k;
   return `<div class="top"><div><h1>Craft App Bundle contributions</h1></div><span class="sub"><i class="lv"></i>Live${S.sync ? `, syncing ${S.sync} repos` : ''}, updated <span id="upd">${sa(S.at)}</span></span></div>
@@ -339,6 +369,7 @@ function overview() {
     <section class="box"><div class="box-h"><h2>Stars</h2><span class="sub">${S.st.sy ? `Syncing history, ${S.st.sy} repos left` : `${N(S.st.t)} over time`}</span></div>${S.st.sy && S.st.wk.length < 2 ? '<p class="empty">Star history is still loading.</p>' : lch(S.st.wk, { u: 'stars' })}${S.st.sy ? '' : `<h3 class="h3" style="margin-top:16px">New stars per day</h3>${bch(S.days.map((d, i) => [d[0], S.st.d[i]]).slice(vi()), { W: 560, H: 120, u: 'stars', lb: 5 })}`}</section>
     <section class="box"><div class="box-h"><h2>CI on main</h2><span class="sub">GitHub Actions, push runs, last 14 days</span></div>${cis()}</section>
   </div>
+  ${dcs()}
   ${team()}
   ${qual()}
   <section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Apps</h2></div>${apps()}</section>

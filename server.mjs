@@ -13,6 +13,8 @@ const rf = (f) => { try { return fs.readFileSync(f, 'utf8').trim(); } catch { re
 const TK = process.env.GH_TOKEN || rf('/run/secrets/gh_token');
 const CI = process.env.OAUTH_ID || rf('/run/secrets/oauth_id');
 const CS = process.env.OAUTH_SECRET || rf('/run/secrets/oauth_secret');
+const DU = (process.env.DCB_URL || '').replace(/\/$/, '');
+const DT = process.env.DCB_TOKEN || rf('/run/secrets/dcb_token');
 fs.mkdirSync(D, { recursive: true });
 
 const kf = path.join(D, 'key');
@@ -34,6 +36,7 @@ async function gh(u, h = hd) {
 
 const db = rj('db.json', { a: {}, p: {}, u: {}, r: [], ca: {}, c: {} });
 db.a ||= {}; db.p ||= {}; db.u ||= {}; db.r ||= []; db.ca ||= {}; db.c ||= {}; db.pm ||= []; db.dl ||= {}; db.dh ||= {}; db.rv ||= {}; db.is ||= {}; db.ia ||= {}; db.st ||= {}; db.ci ||= {}; db.rh ||= {}; db.ks ||= [];
+db.dc ||= { d: {}, u: {}, ch: {}, h: Array.from({ length: 7 }, () => new Array(24).fill(0)), z: 0, zi: [], gp: [[1793201367, 1793367449]], on: 1, f: 0 };
 if (db.v !== 3) { for (const s of Object.values(db.a)) { s.cur = null; s.start = null; s.aft = null; } db.v = 3; }
 let dirty = 0, rt = 0, err = null;
 const sec = (t) => (t ? Math.round(Date.parse(t) / 1000) : 0);
@@ -285,6 +288,42 @@ async function ci() {
   ct = Date.now(); dirty = 1;
 }
 
+let dbusy = 0;
+async function dpoll() {
+  if (!DT || dbusy) return;
+  dbusy = 1;
+  const X = db.dc, now = Math.round(Date.now() / 1000);
+  try {
+    let ok = false;
+    try { const r = await fetch(DU + '/health', { signal: AbortSignal.timeout(8000) }); ok = r.ok && (await r.json()).ok; } catch {}
+    if (!ok && X.on) { X.gp.push([now, 0]); X.on = 0; dirty = 1; }
+    if (ok && !X.on) { X.gp[X.gp.length - 1][1] = now; X.on = 1; dirty = 1; }
+    for (let i = 0; i < 20; i++) {
+      const r = await fetch(`${DU}/statistik?seit=${X.z}`, { headers: { Authorization: 'Bearer ' + DT }, signal: AbortSignal.timeout(20000) });
+      if (!r.ok) throw new Error('dcb ' + r.status);
+      const j = await r.json();
+      const zs = new Set(X.zi);
+      for (const [id, , ch, hs, z] of j) {
+        if (z < X.z || (z === X.z && zs.has(id))) continue;
+        const d = Math.floor(z / 86400), dd = new Date(z * 1000);
+        X.d[d] = (X.d[d] || 0) + 1;
+        const u = (X.u[d] ||= []); if (!u.includes(hs)) u.push(hs);
+        const c = (X.ch[ch] ||= {}); c[d] = (c[d] || 0) + 1;
+        X.h[(dd.getUTCDay() + 6) % 7][dd.getUTCHours()]++;
+        if (!X.f || z < X.f) X.f = z;
+        if (z > X.z) { X.z = z; X.zi = []; zs.clear(); }
+        X.zi.push(id); zs.add(id);
+        dirty = 1;
+      }
+      if (j.length < 5000) break;
+    }
+    const lo = Math.floor(now / 86400) - 35;
+    for (const d of Object.keys(X.u)) if (+d < lo) delete X.u[d];
+    if (dirty) build();
+  } catch (e) { console.error('[discord]', e.message); }
+  dbusy = 0;
+}
+
 let lw = 0, lbusy = 0;
 async function live() {
   if (!db.r.length || lbusy) return;
@@ -467,6 +506,13 @@ function build() {
   const s90 = days.map((d) => SD[d.d / 86400] || 0);
   const dpd = {};
   for (const r of db.r) { const h = db.dh[r.n] || []; for (let i = 1; i < h.length; i++) if (h[i][0] - h[i - 1][0] === 86400) dpd[h[i][0]] = (dpd[h[i][0]] || 0) + h[i][1] - h[i - 1][1]; }
+  const X = db.dc, td = Math.floor(now / 86400), gday = (d) => d === Math.floor(X.f / 86400) || X.gp.some(([a, b]) => a < (d + 1) * 86400 && (b || now) > d * 86400);
+  const f0 = X.f ? Math.max(Math.floor(X.f / 86400), td - 59) : td;
+  const dcd = []; for (let d = f0; d <= td; d++) dcd.push([d * 86400, X.d[d] || 0, (X.u[d] || []).length, gday(d) ? 1 : 0]);
+  const chs = (n) => Object.entries(X.ch).map(([c, v]) => [c, Object.entries(v).reduce((a, [d, k]) => a + (+d > td - n ? k : 0), 0)]).filter((x) => x[1]).sort((a, b) => b[1] - a[1]);
+  const u7 = new Set(); for (let d = td - 6; d <= td; d++) for (const h of X.u[d] || []) u7.add(h);
+  const full = dcd.slice(-8, -1).filter((x) => !x[3]);
+  const dc = X.f ? { days: dcd, ch7: chs(7).slice(0, 12), ch30: chs(30).length, h: X.h, m7: dcd.slice(-7).reduce((a, x) => a + x[1], 0), u7: u7.size, a7: full.length ? Math.round(full.reduce((a, x) => a + x[2], 0) / full.length) : null, f: X.f, on: X.on, gp: X.gp.filter((g) => !g[1] || g[1] > now - 60 * 86400) } : null;
   const nw7 = [...ppl.values()].filter((p) => now - p.f < 7 * 86400).length, c7t = [...ppl.values()].reduce((a, p) => a + p.c7, 0);
   all.sort((a, b) => b[0] - a[0]);
   const dd = (n, d) => { const h = db.dh[n] || [], c = h[h.length - 1]; if (!c) return null; const b = [...h].reverse().find((x) => x[0] <= c[0] - d * 86400); return b ? c[1] - b[1] : null; };
@@ -478,7 +524,7 @@ function build() {
     is: { o: iop, o30: i30, x30, np30, b: ib, f: ifr, fr: med(ifs), sy: db.r.filter((r) => !db.ia[r.n] || !db.ia[r.n].cur).length },
     st: { wk: swk, d: s90, t: stt, sy: db.r.filter((r) => !db.st[r.n] || !db.st[r.n].top).length },
     dd: Object.entries(dpd).map(([d, v]) => [+d, v]).sort((a, b) => a[0] - b[0]).slice(-120),
-    rvl: rvl.slice(0, 50),
+    rvl: rvl.slice(0, 50), dc,
     rs: rp.map((r) => ({ n: r.n, m: r.m, o: r.o, op: r.op, c: r.c.size, t: med(r.t), cm: r.cm, b: r.b, q: (db.q || {})[r.n] || null, s: (db.r.find((x) => x.n === r.n) || {}).s || 0, f: (db.r.find((x) => x.n === r.n) || {}).f || 0, w: ow(r.n), x: rc.has(r.n) ? 1 : 0, ci: db.ci[r.n] ? { n: db.ci[r.n].n, ok: db.ci[r.n].ok, med: db.ci[r.n].med, last: db.ci[r.n].last } : null, is: irs[r.n] || null, fr: med(rvr[r.n] || []), dl: db.dl[r.n] ? db.dl[r.n].t : 0 })),
     v: ++ver, pre, days: days.map((d) => [d.d, d.o, d.x, d.m, d.a.size, d.n]), weeks, heat, hist, lead, team, recent: all.slice(0, 40), dl: dla,
   };
@@ -734,4 +780,6 @@ let busy = 0;
 const run = async () => { if (busy) return; busy = 1; await tick(); busy = 0; };
 setInterval(run, 60e3);
 setInterval(live, 10e3);
+setInterval(dpoll, 120e3);
+setTimeout(dpoll, 5000);
 run();
