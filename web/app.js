@@ -221,6 +221,45 @@ function feed() {
     <span class="t"><a href="${esc(gu(rn))}/pull/${nr}" target="_blank" rel="noopener">${esc(ti)}</a><br><span class="m"><a href="#/u/${encodeURIComponent(l)}" class="dim">${esc(l)}</a></span></span><span class="m">${ago(m)}</span></li>`).join('')}</ul>`;
 }
 
+const PL = [['win', 'Windows', 'var(--accent)'], ['mac', 'macOS', 'var(--strong)'], ['lin', 'Linux', 'var(--good)'], ['bsd', 'FreeBSD', 'var(--bad)'], ['web', 'Web', '#8b5cf6'], ['cli', 'CLI', 'var(--line2)'], ['oth', 'Other', 'var(--faint)']];
+const FN = { appimage: 'AppImage', deb: '.deb', rpm: '.rpm', flatpak: 'Flatpak', snap: 'Snap', msi: 'MSI', exe: 'EXE', msix: 'MSIX', dmg: 'DMG', pkg: 'PKG', zip: 'ZIP', 'pkg.tar.zst': 'Arch pkg', 'tar.gz': 'tar.gz', 'tar.xz': 'tar.xz' };
+const big = (x) => x == null ? '–' : x >= 1e6 ? (x / 1e6).toFixed(x >= 1e7 ? 1 : 2) + 'M' : x >= 1e4 ? Math.round(x / 1e3) + 'k' : N(x);
+const pct = (v, t) => t ? (v / t * 100 >= 10 ? Math.round(v / t * 100) : (v / t * 100).toFixed(1)) + '%' : '–';
+function sbar(p, t, h = 6) {
+  return `<div class="sbar" style="height:${h}px">${PL.filter(([k]) => p[k]).map(([k, n, c]) => `<i style="width:${p[k] / t * 100}%;background:${c}" data-t="${esc(`<b>${n}</b><br>${N(p[k])}, ${pct(p[k], t)}`)}"></i>`).join('')}</div>`;
+}
+function dls() {
+  const D = S.dl || []; if (!D.length) return '';
+  const P = {}, A = {}, F = {}; let T = 0, br = 0, d7 = 0, h7 = D.every((x) => x.d7 != null);
+  for (const x of D) { T += x.t; br += x.br ? x.br[0] : 0; d7 += x.d7 || 0; for (const k in x.p) P[k] = (P[k] || 0) + x.p[k]; for (const k in x.a) A[k] = (A[k] || 0) + x.a[k]; for (const k in x.f) F[k] = (F[k] || 0) + x.f[k]; }
+  const ot = (P.bsd || 0) + (P.web || 0) + (P.cli || 0) + (P.oth || 0);
+  const lst = (o, f, n) => { const e = Object.entries(o).sort((a, b) => b[1] - a[1]).slice(0, n), mx = Math.max(1, ...e.map((x) => x[1])); return `<table><tbody>${e.map(([k, v]) => `<tr><td>${f(k)}</td><td class="n">${N(v)}</td><td class="n dim">${pct(v, T)}</td><td style="width:40%"><div class="bar"><i style="width:${v / mx * 100}%;background:var(--accent)"></i></div></td></tr>`).join('')}</tbody></table>`; };
+  const fk = (k) => { const [p, f] = k.split(':'); return `${esc(FN[f] || f)} <span class="dim">${esc((PL.find((x) => x[0] === p) || [, p])[1])}</span>`; };
+  const r = D.slice().sort((a, b) => b.t - a.t), mx = Math.max(1, ...r.map((x) => x.t));
+  return `<section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Downloads</h2><span class="sub">GitHub release assets, all versions</span></div>
+  <div class="kpi" style="margin-bottom:20px">
+    <div><span class="lbl">Total</span><b>${nk('d.t', T)}</b></div>
+    ${h7 ? `<div><span class="lbl">Last 7 days</span><b>${nk('d.7', d7)}</b></div>` : ''}
+    <div><span class="lbl">Windows</span><b>${big(P.win)}</b><span class="sub">${pct(P.win, T)}</span></div>
+    <div><span class="lbl">macOS</span><b>${big(P.mac)}</b><span class="sub">${pct(P.mac, T)}</span></div>
+    <div><span class="lbl">Linux</span><b>${big(P.lin)}</b><span class="sub">${pct(P.lin, T)}</span></div>
+    <div><span class="lbl">BSD, Web, CLI</span><b>${big(ot)}</b><span class="sub">${pct(ot, T)}</span></div>
+    ${h7 ? '' : `<div><span class="lbl">Homebrew, 30d</span><b>${nk('d.br', br)}</b><span class="sub">installs</span></div>`}
+  </div>
+  ${sbar(P, T, 14)}<div class="leg">${PL.filter(([k]) => P[k]).map(([k, n, c]) => `<span><i style="background:${c}"></i>${n} ${pct(P[k], T)}</span>`).join('')}</div>
+  <div class="grid g2" style="margin:20px 0 0">
+    <div><h3 class="h3">Package formats</h3>${lst(F, fk, 10)}</div>
+    <div><h3 class="h3">Architectures</h3>${lst(A, (k) => esc(k === 'universal' ? 'Universal (macOS)' : k), 6)}</div>
+  </div>
+  <h3 class="h3" style="margin-top:20px">Per app</h3>
+  <div class="tw"><table><thead><tr><th>App</th><th class="n">Downloads</th>${h7 ? '<th class="n hide-s">7 days</th>' : ''}<th class="hide-s" style="width:22%">Platforms</th><th class="n hide-s">Windows</th><th class="n hide-s">macOS</th><th class="n hide-s">Linux</th><th class="n hide-s">Homebrew 30d</th><th class="hide-s">Latest</th><th class="n hide-s">Releases</th></tr></thead><tbody>${r.map((x) => `<tr>
+    <td style="white-space:nowrap"><a class="app" href="${esc(gu(x.n))}/releases" target="_blank" rel="noopener" style="color:${ink(x.n)}"><img src="${ico(x.n)}" alt="">${esc(ap(x.n)[0])}</a></td>
+    <td class="n">${nk('d.a.' + x.n, x.t)}</td>${h7 ? `<td class="n hide-s dim">${N(x.d7)}</td>` : ''}<td class="hide-s">${sbar(x.p, x.t)}</td>
+    <td class="n hide-s dim">${big(x.p.win)}</td><td class="n hide-s dim">${big(x.p.mac)}</td><td class="n hide-s dim">${big(x.p.lin)}</td><td class="n hide-s dim">${x.br ? N(x.br[0]) : '–'}</td>
+    <td class="hide-s" style="white-space:nowrap">${x.rl[0] ? `<a class="dim" href="${esc(gu(x.n))}/releases/tag/${encodeURIComponent(x.rl[0][0])}" target="_blank" rel="noopener" data-t="${esc(`<b>${x.rl[0][0]}</b><br>${dt(x.rl[0][1], 1)}<br>${N(x.rl[0][2])} downloads`)}">${esc(x.rl[0][0].replace(/^[a-z-]*v(?=\d)/i, 'v'))}</a> <span class="dim">${ago(x.rl[0][1])}</span>` : '–'}</td><td class="n hide-s dim">${x.nr}</td></tr>`).join('')}</tbody></table></div>
+  </section>`;
+}
+
 function overview() {
   const k = S.k;
   return `<div class="top"><div><h1>Craft App Bundle contributions</h1></div><span class="sub"><i class="lv"></i>Live${S.sync ? `, syncing ${S.sync} repos` : ''}, updated <span id="upd">${sa(S.at)}</span></span></div>
@@ -238,6 +277,7 @@ function overview() {
     <section class="box"><div class="box-h"><h2>Contributors</h2><span class="sub"><span style="color:var(--accent-ink)">Total</span>, active per day</span></div>${growth()}</section>
     <section class="box"><div class="box-h"><h2>Time to merge</h2></div>${hist()}</section>
   </div>
+  ${dls()}
   <section class="box" style="margin-bottom:24px"><div class="box-h"><h2>When PRs get merged</h2><span class="sub">Your local time</span></div>${heat()}</section>
   <section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Leaderboard</h2>${segs()}</div><div id="lead">${lead(false)}</div></section>
   ${team()}

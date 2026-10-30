@@ -156,3 +156,9 @@ h1 .tm { margin-left: 12px; vertical-align: middle; font-size: 11px; }
   .tw { overflow-x: auto; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+.sbar { display: flex; background: var(--sunken); min-width: 60px; }
+.sbar i { display: block; height: 100%; }
+.leg span { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); margin-right: 14px; font-size: 12px; }
+.leg span i { width: 8px; height: 8px; display: inline-block; }
+.h3 { font: 700 11px/1 "Geist Mono", monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+.kpi .sub { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }

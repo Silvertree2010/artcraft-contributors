@@ -33,7 +33,7 @@ async function gh(u, h = hd) {
 }
 
 const db = rj('db.json', { a: {}, p: {}, u: {}, r: [], ca: {}, c: {} });
-db.a ||= {}; db.p ||= {}; db.u ||= {}; db.r ||= []; db.ca ||= {}; db.c ||= {}; db.pm ||= [];
+db.a ||= {}; db.p ||= {}; db.u ||= {}; db.r ||= []; db.ca ||= {}; db.c ||= {}; db.pm ||= []; db.dl ||= {}; db.dh ||= {};
 if (db.v !== 2) { for (const s of Object.values(db.a)) { s.cur = null; s.start = null; s.aft = null; } db.v = 2; }
 let dirty = 0, rt = 0, err = null;
 const sec = (t) => (t ? Math.round(Date.parse(t) / 1000) : 0);
@@ -69,6 +69,48 @@ async function sq() {
     for (const m of j.measures || []) (q[km[m.component]] ||= { k: m.component })[m.metric] = m.metric === 'alert_status' ? m.value : +m.value;
   }
   db.q = q; qt = Date.now(); dirty = 1;
+}
+
+const pf = (a) => {
+  const x = a.toLowerCase();
+  if (/\.(zsync|sig|asc|sha256|blockmap|txt|json|ya?ml|mp4|webm|mov|gif|png|jpe?g)$|sha256sums/.test(x)) return null;
+  const p = /-cli-/.test(x) ? 'cli' : /-web-|wasm/.test(x) ? 'web' : /freebsd/.test(x) ? 'bsd' : /windows|win(32|64)|\.(msi|exe|msix)$/.test(x) ? 'win'
+    : /macos|darwin|osx|universal|\.(dmg|pkg)$/.test(x) ? 'mac' : /linux|\.(appimage|deb|rpm|flatpak|snap)$|\.pkg\.tar/.test(x) ? 'lin' : 'oth';
+  const r = /aarch64|arm64/.test(x) ? 'arm64' : /riscv/.test(x) ? 'riscv64' : /x86_64|x64|amd64/.test(x) ? 'x64' : /x86|i686|win32/.test(x) ? 'x86' : /universal/.test(x) ? 'universal' : '';
+  const f = (/\.(appimage|deb|rpm|flatpak|snap|msi|exe|msix|dmg|pkg|zip)$/.exec(x) || /\.(pkg\.tar\.zst|tar\.gz|tar\.xz)$/.exec(x) || [])[1] || '';
+  return [p, r, f];
+};
+let dt0 = 0;
+async function dl() {
+  const out = {}, td = Math.floor(Date.now() / DY) * 86400;
+  for (const r of db.r) {
+    const o = { t: 0, p: {}, a: {}, f: {}, rl: [] };
+    for (let pg = 1; pg <= 5; pg++) {
+      const j = await gh(`/repos/${r.o || O}/${r.n}/releases?per_page=100&page=${pg}`);
+      for (const R of j) {
+        let rt = 0;
+        for (const a of R.assets) {
+          const c = pf(a.name); if (!c) continue;
+          const n = a.download_count; rt += n; o.t += n;
+          o.p[c[0]] = (o.p[c[0]] || 0) + n;
+          if (c[1]) o.a[c[1]] = (o.a[c[1]] || 0) + n;
+          if (c[2]) o.f[c[0] + ':' + c[2]] = (o.f[c[0] + ':' + c[2]] || 0) + n;
+        }
+        o.rl.push([R.tag_name, sec(R.published_at), rt, R.prerelease ? 1 : 0]);
+      }
+      if (j.length < 100) break;
+    }
+    try {
+      const b = await fetch(`https://formulae.brew.sh/api/cask/${r.n === 'craft-launcher' ? 'artcraft-launcher' : r.n}.json`, { signal: AbortSignal.timeout(15000) });
+      if (b.ok) { const j = await b.json(); if (j.url && j.url.toLowerCase().includes(`github.com/${(r.o || O).toLowerCase()}/${r.n.toLowerCase()}/`)) { const i = j.analytics && j.analytics.install; o.br = i ? [30, 90, 365].map((d) => Object.values(i[d + 'd'] || {})[0] || 0) : null; } }
+    } catch (e) { console.error('[brew]', r.n, e.message); }
+    out[r.n] = o;
+    const h = (db.dh[r.n] ||= []);
+    if (h.length && h[h.length - 1][0] === td) h[h.length - 1][1] = o.t; else h.push([td, o.t]);
+    if (h.length > 400) h.splice(0, h.length - 400);
+    await sl(200);
+  }
+  db.dl = out; dt0 = Date.now(); dirty = 1;
 }
 
 const PF = 'number title createdAt mergedAt closedAt updatedAt mergedBy{login} author{__typename login ...on User{databaseId}}';
@@ -283,12 +325,14 @@ function build() {
   const team = [...new Set([...mb.keys(), ...db.pm])].map((l) => [l, db.u[l] || 0, mb.get(l) || 0, db.pm.includes(l) ? 1 : 0, ppl.has(l) ? 1 : 0]).sort((a, b) => b[2] - a[2] || b[3] - a[3]);
   for (const x of lead) x.push(tn.has(x[0].toLowerCase()) ? 1 : 0, mb.get(x[0]) || 0, ppl.get(x[0]).c7, ppl.get(x[0]).c30);
   all.sort((a, b) => b[0] - a[0]);
+  const dd = (n, d) => { const h = db.dh[n] || [], c = h[h.length - 1]; if (!c) return null; const b = [...h].reverse().find((x) => x[0] <= c[0] - d * 86400); return b ? c[1] - b[1] : null; };
+  const dla = db.r.map((r) => r.n).filter((n) => db.dl[n] && db.dl[n].t).map((n) => { const o = db.dl[n], rl = o.rl.filter((x) => !x[3]).sort((a, b) => b[1] - a[1]); return { n, w: ow(n), x: rc.has(n) ? 1 : 0, t: o.t, p: o.p, a: o.a, f: o.f, br: o.br || null, d1: dd(n, 1), d7: dd(n, 7), rl: rl.slice(0, 12), nr: o.rl.length }; });
   const n30 = [...ppl.values()].filter((p) => now - p.f < 30 * 86400).length;
   S = {
     at: Math.round(now), sync: !db.r.length ? 1 : db.r.filter((r) => !db.a[r.n] || !db.a[r.n].cur || !db.ca[r.n] || !db.ca[r.n].cur).length, err,
     k: { c: ppl.size, m: tm, o: op, cm: tc, m1, m7, t: med(t30), n30, pr: all.length && rp.reduce((s, r) => s + r.o, 0) },
     rs: rp.map((r) => ({ n: r.n, m: r.m, o: r.o, op: r.op, c: r.c.size, t: med(r.t), cm: r.cm, b: r.b, q: (db.q || {})[r.n] || null, s: (db.r.find((x) => x.n === r.n) || {}).s || 0, w: ow(r.n), x: rc.has(r.n) ? 1 : 0 })),
-    v: ++ver, pre, days: days.map((d) => [d.d, d.o, d.x, d.m, d.a.size, d.n]), weeks, heat, hist, lead, team, recent: all.slice(0, 40),
+    v: ++ver, pre, days: days.map((d) => [d.d, d.o, d.x, d.m, d.a.size, d.n]), weeks, heat, hist, lead, team, recent: all.slice(0, 40), dl: dla,
   };
   Sz = zlib.gzipSync(JSON.stringify(S));
   const idx = new Map();
@@ -306,6 +350,7 @@ async function tick() {
     if (!db.r.length || Date.now() - rt > H) await repos();
     await sync();
     await csync();
+    if (Date.now() - dt0 > H) await dl().catch((e) => console.error('[dl]', e.message));
     if (Date.now() - qt > H) await sq().catch((e) => console.error('[sonar]', e.message));
     err = null;
   } catch (e) { err = e.message; console.error('[sync]', e.message); }
