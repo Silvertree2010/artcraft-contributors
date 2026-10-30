@@ -210,7 +210,7 @@ function qual() {
     <td class="n hide-s dim">${k(q.bugs)}</td><td class="n hide-s dim">${k(q.vulnerabilities)}</td><td class="n hide-s dim">${k(q.coverage, '%', 1)}</td><td class="n hide-s dim">${k(q.duplicated_lines_density, '%', 1)}</td><td class="n hide-s dim">${k(q.ncloc)}</td></tr>`; }).join('')}</tbody></table></div></section>`;
 }
 const tmt = (x) => x[17] ? `Merged ${N(x[17])} PRs, so likely has write access` : 'Public member of the storytold org';
-const TAGS = { mmexicann: '67' };
+const TAGS = { mmexicann: '67', wanikhawar: 'Cat' };
 const tb = (x) => (x[16] ? `<span class="st n tm" data-t="${esc(tmt(x))}">Team</span>` : '') + (TAGS[x[0].toLowerCase()] ? `<span class="st n tm">${esc(TAGS[x[0].toLowerCase()])}</span>` : '');
 function team() {
   if (!S.team || !S.team.length) return '';
