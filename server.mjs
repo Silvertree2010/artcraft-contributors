@@ -728,6 +728,7 @@ ${bars}<text x="20" y="133" font-size="9" fill="${mu}">${xe(cm.slice(0, 3).map((
 </g></svg>`;
   svgo(s, sv);
 }
+const BV = (() => { try { return crypto.createHash('sha1').update(fs.readFileSync(path.join(W, 'app.js'))).update(fs.readFileSync(path.join(W, 'style.css'))).digest('hex').slice(0, 10); } catch { return '0'; } })();
 let IX = null;
 function ogh(p) {
   try { IX ||= fs.readFileSync(path.join(W, 'index.html'), 'utf8'); } catch { return null; }
@@ -767,7 +768,7 @@ http.createServer(async (q, s) => {
       s.writeHead(200, { 'Content-Type': 'application/json', 'Content-Encoding': 'gzip', 'Cache-Control': 'no-cache' });
       return s.end(Sz);
     }
-    if (p === '/api/v') { s.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); return s.end(`{"v":${ver}}`); }
+    if (p === '/api/v') { s.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); return s.end(`{"v":${ver},"b":"${BV}"}`); }
     if (p.startsWith('/api/u/')) {
       const l = decodeURIComponent(p.slice(7)).toLowerCase(), L = U.get(l) || [];
       const row = S ? S.lead.findIndex((r) => r[0].toLowerCase() === l) : -1;

@@ -46,7 +46,7 @@ function roll() {
 const sa = (t) => { const s = Math.max(0, Math.round(Date.now() / 1000 - t)); return s < 60 ? s + 's ago' : ago(t); };
 setInterval(() => { const e = $('#upd'); if (e && S) e.textContent = sa(S.at); }, 1000);
 
-let S = null, ME = null, ON = false, hid = new Set(), per = 'all', srt = null, lim = 50, q = '';
+let BV0 = null, S = null, ME = null, ON = false, hid = new Set(), per = 'all', srt = null, lim = 50, q = '';
 
 const tip = $('#tip');
 document.addEventListener('mousemove', (e) => {
@@ -713,7 +713,9 @@ dk.addEventListener('change', route);
     if (bz || document.hidden || !S) return;
     bz = 1;
     try {
-      const { v } = await get('/api/v');
+      const { v, b } = await get('/api/v');
+      if (BV0 && b && b !== BV0) { location.reload(); return; }
+      BV0 = b;
       const p = location.hash.replace(/^#\/?/, '').split('/')[0];
       if (v !== S.v && await load() && (p === '' || p === 'people' || p === 'u') && !document.querySelector('#q:focus')) { const y = scrollY; await route(); scrollTo(0, y); }
     } catch {}
