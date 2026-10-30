@@ -453,7 +453,7 @@ function prof(d, l, mine) {
   </div>
   <div class="grid g2">
     <form class="box" id="vs" data-a="${esc(r[0])}"><div class="box-h"><h2>Compare</h2></div><div style="display:flex;gap:8px;flex-wrap:wrap"><input class="srch" id="vsq" placeholder="Other GitHub user" autocomplete="off" list="vsl"><datalist id="vsl">${S ? S.lead.slice(0, 200).map((x) => `<option value="${esc(x[0])}">`).join('') : ''}</datalist><button class="btn">Compare</button></div></form>
-    <section class="box"><div class="box-h"><h2>Badge for your README</h2><img src="${esc(bu)}" alt=""></div><div class="code"><code>${esc(md)}</code><button class="btn" data-cp="${esc(md)}">Copy</button></div></section>
+    <section class="box"><div class="box-h"><h2>README badge</h2></div><div class="bdgx"><img src="${esc(bu)}" alt=""><button class="btn" data-cp="${esc(md)}">Copy Markdown</button></div></section>
   </div>`;
 }
 
@@ -543,7 +543,7 @@ function apage(d) {
     <section class="box"><div class="box-h"><h2>Releases</h2><a class="sub" href="#/releases">All ${N(d.rl.length)}</a></div><ul class="feed rlf">${rl.map((x) => `<li><span class="st n">${esc(x[0].replace(/^[a-z-]*v(?=\d)/i, 'v'))}</span><span class="t"><a href="${esc(gu(n))}/releases/tag/${encodeURIComponent(x[0])}" target="_blank" rel="noopener">${N(x[2])} downloads</a><br><span class="m">${x[4] ? `${x[4]} changes` : ''}</span></span><span class="m">${ago(x[1])}</span></li>`).join('') || '<li class="dim">None</li>'}</ul></section>
   </div>
   ${d.st ? `<section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Stars</h2><span class="sub">${N(d.s)}</span></div>${lch(d.swk, { u: 'stars', W: 900, H: 160 })}</section>` : ''}
-  <div class="code"><code>${esc(md)}</code><button class="btn" data-cp="${esc(md)}">Copy badge</button></div>`;
+  <div class="bdgx"><img src="${esc(location.origin + '/badge/app/' + n + '.svg')}" alt=""><button class="btn" data-cp="${esc(md)}">Copy Markdown</button></div>`;
 }
 function dual(D, c) {
   const W = 900, H = 190, L = 34, B = 22, T = 6, n = D.length || 1, bw = (W - L) / n, st = Math.max(1, Math.round(n / 7));

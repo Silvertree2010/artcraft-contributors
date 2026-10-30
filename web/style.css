@@ -213,3 +213,4 @@ form.box { margin: 0; }
 .trio b { display: block; font: 620 24px/1.1 Archivo, sans-serif; font-stretch: 112%; color: var(--strong); }
 .trio > div > span { font-size: 12px; color: var(--muted); }
 .feed.rlf li { grid-template-columns: 72px 1fr auto; }
+.bdgx { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; } .bdgx img { height: 20px; }

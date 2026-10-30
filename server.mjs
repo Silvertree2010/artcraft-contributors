@@ -673,7 +673,7 @@ function feedx(s) {
   s.writeHead(200, { 'Content-Type': 'application/rss+xml; charset=utf-8', 'Cache-Control': 'max-age=300' });
   s.end(x);
 }
-const tw = (t) => Math.round([...t].reduce((a, c) => a + (/[il.,:'|!]/.test(c) ? 3.2 : /[mwMW]/.test(c) ? 9.5 : /[A-Z0-9#]/.test(c) ? 7.4 : 6.3), 0)) + 12;
+const tw = (t) => Math.round([...t].reduce((a, c) => a + (/[il.,:'|!]/.test(c) ? 3.2 : /[mwMW]/.test(c) ? 9.5 : /[A-Z0-9#]/.test(c) ? 7.2 : 6.1), 0)) + 10;
 function badge(s, p) {
   let m = /^\/badge\/(u|app)\/([^/]+?)\.svg$/.exec(p), L = 'ArtCraft', V = null;
   if (m && S && m[1] === 'u') { const l = decodeURIComponent(m[2]).toLowerCase(), i = S.lead.findIndex((r) => r[0].toLowerCase() === l); if (i >= 0) V = `#${i + 1} · ${nfm.format(S.lead[i][2])} merged`; }
