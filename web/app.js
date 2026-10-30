@@ -311,9 +311,14 @@ let tmk = 'cm';
 const lum = (h) => { const n = parseInt(h.slice(1), 16), f = (v) => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }; return .2126 * f(n >> 16) + .7152 * f((n >> 8) & 255) + .0722 * f(n & 255); };
 function tmap() {
   const K = { cm: ['Commits', (x) => x.cm], m: ['Merged PRs', (x) => x.m], dl: ['Downloads', (x) => x.dl], s: ['Stars', (x) => x.s] };
-  const it = S.rs.filter((x) => AP[x.n.toLowerCase()]).map((x) => ({ n: x.n, v: K[tmk][1](x) || 0 })).filter((x) => x.v > 0).sort((a, b) => b.v - a.v);
-  const R = sqz(it, 0, 0, 100, 32), T = it.reduce((a, b) => a + b.v, 0);
-  return `<div class="tmg">${R.map((r) => `<a href="#/app/${encodeURIComponent(r.n)}" style="left:${r.x}%;top:${r.y / 32 * 100}%;width:${Math.min(r.w, 100 - r.x)}%;height:${Math.min(r.h, 32 - r.y) / 32 * 100}%;background:${col(r.n)};color:${lum(col(r.n)) > .5 ? '#101014' : '#fff'}" data-t="${esc(`<b>${esc(ap(r.n)[0])}</b><br>${N(r.v)} ${K[tmk][0].toLowerCase()}, ${pct(r.v, T)}`)}">${r.w * r.h > 45 ? `<span><img src="${ico(r.n)}" alt="">${esc(ap(r.n)[0])}</span><b>${big(r.v)}</b>` : ''}</a>`).join('')}</div>`;
+  const al = S.rs.filter((x) => AP[x.n.toLowerCase()]).map((x) => ({ n: x.n, v: K[tmk][1](x) || 0 })).filter((x) => x.v > 0).sort((a, b) => b.v - a.v);
+  const T = al.reduce((a, b) => a + b.v, 0), sm = al.filter((x) => x.v / T < .025), it = al.filter((x) => x.v / T >= .025);
+  if (sm.length) it.push({ n: '', v: sm.reduce((a, b) => a + b.v, 0), o: sm });
+  const R = sqz(it, 0, 0, 100, 32);
+  return `<div class="tmg">${R.map((r) => { const nm = r.o ? `+${r.o.length}` : ap(r.n)[0], c = r.o ? 'var(--line2)' : col(r.n), wd = r.w * 11.6, ht = r.h / 32 * 370;
+    const tt = r.o ? r.o.map((x) => `${esc(ap(x.n)[0])}: ${N(x.v)}`).join('<br>') : `<b>${esc(nm)}</b><br>${N(r.v)} ${K[tmk][0].toLowerCase()}, ${pct(r.v, T)}`;
+    const lb = wd > nm.length * 8.5 + 46 ? `<span>${r.o ? '' : `<img src="${ico(r.n)}" alt="">`}${esc(nm)}</span>` : wd > 34 && !r.o ? `<span><img src="${ico(r.n)}" alt=""></span>` : '';
+    return `<a ${r.o ? '' : `href="#/app/${encodeURIComponent(r.n)}"`} style="left:${r.x}%;top:${r.y / 32 * 100}%;width:${Math.min(r.w, 100 - r.x)}%;height:${Math.min(r.h, 32 - r.y) / 32 * 100}%;background:${c};color:${r.o || lum(col(r.n)) > .5 ? '#101014' : '#fff'}" data-t="${esc(tt)}">${ht > 34 ? lb : ''}${ht > 70 && wd > 54 ? `<b>${big(r.v)}</b>` : ''}</a>`; }).join('')}</div>`;
 }
 function wall(L) {
   return `<div class="wall">${L.map(([l, i, t]) => `<a href="#/u/${encodeURIComponent(l)}" data-t="${esc(`<b>${esc(l)}</b>${t ? '<br>' + t : ''}`)}"><img loading="lazy" src="${av(l, i, 64)}" alt="${esc(l)}"></a>`).join('')}</div>`;
