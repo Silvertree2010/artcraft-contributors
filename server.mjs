@@ -215,9 +215,10 @@ async function isync() {
       if (s.cur && Date.now() - Date.parse(s.cur) < 10 * 60e3) continue;
       s.start = new Date().toISOString(); s.aft = null;
     }
-    while (s.start && n < 40 && !low()) {
+    while (s.start && n < 80 && !low()) {
       const j = await gql(IQ, { o: ow(rn), r: rn, a: s.aft });
       n++;
+      if (!j.repository) { s.cur = s.start; s.start = null; s.aft = null; break; }
       const is = j.repository.issues, ii = (db.is[rn] ||= {});
       for (const q of is.nodes) {
         if (!q.author) continue;
@@ -231,7 +232,7 @@ async function isync() {
       else s.aft = is.pageInfo.endCursor;
       await sl(300);
     }
-    if (n >= 40 || low()) break;
+    if (n >= 80 || low()) break;
   }
 }
 
@@ -248,6 +249,7 @@ async function ssync() {
     while (s.run && n < 50 && !low()) {
       const j = await gql(SQ, { o: ow(rn), r: rn, a: R2.aft });
       n++;
+      if (!j.repository) { s.run = null; s.at = Date.now(); break; }
       const g = j.repository.stargazers;
       let stop = !g.pageInfo.hasNextPage;
       for (const e of g.edges) {
