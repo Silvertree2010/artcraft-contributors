@@ -39,9 +39,20 @@ let dirty = 0, rt = 0, err = null;
 const sec = (t) => (t ? Math.round(Date.parse(t) / 1000) : 0);
 const okr = (r) => !r.archived && !/^placeholder-/i.test(r.name) && /craft/i.test(r.name);
 
+const ow = (n) => (db.r.find((r) => r.n === n) || {}).o || O;
+async function comm() {
+  const f = await gh('/repos/storytold/craft-launcher/contents/crates/core/src/catalog.rs');
+  const t = Buffer.from(f.content, 'base64').toString('utf8');
+  const cs = [...t.matchAll(/kind:\s*AppKind::Community[\s\S]*?"([A-Za-z0-9-]+)\/([A-Za-z0-9._-]+)"/g)].map((m) => [m[1], m[2]]).filter(([o]) => o.toLowerCase() !== O);
+  const out = [];
+  for (const [o, n] of cs) { try { out.push(await gh(`/repos/${o}/${n}`)); } catch (e) { console.error('[comm]', o, n, e.message); } }
+  return out;
+}
 async function repos() {
   const j = await gh(`/orgs/${O}/repos?per_page=100&type=public`);
-  db.r = j.filter(okr).map((r) => ({ n: r.name, s: r.stargazers_count, f: r.forks_count, d: r.description || '' }));
+  const cx = await comm().catch((e) => { console.error('[comm]', e.message); return db.r.filter((r) => r.c).map((r) => ({ name: r.n, owner: { login: r.o }, stargazers_count: r.s, forks_count: r.f, description: r.d })); });
+  db.r = [...j.filter(okr).map((r) => ({ n: r.name, o: O, s: r.stargazers_count, f: r.forks_count, d: r.description || '' })),
+    ...cx.filter((r) => !r.archived && !j.some((x) => x.name === r.name)).map((r) => ({ n: r.name, o: r.owner.login, c: 1, s: r.stargazers_count, f: r.forks_count, d: r.description || '' }))];
   db.pm = (await gh(`/orgs/${O}/public_members?per_page=100`)).map((m) => m.login);
   rt = Date.now(); dirty = 1;
 }
@@ -89,7 +100,7 @@ async function csync() {
       if (fu) s.full = Date.now();
     }
     while (s.start && n < 60) {
-      const j = await gql(CQ, { o: O, r: rn, a: s.aft, s: s.si });
+      const j = await gql(CQ, { o: ow(rn), r: rn, a: s.aft, s: s.si });
       n++;
       const h = j.repository && j.repository.defaultBranchRef && j.repository.defaultBranchRef.target && j.repository.defaultBranchRef.target.history;
       const cc = (db.c[rn] ||= {});
@@ -118,7 +129,7 @@ async function sync() {
       s.start = new Date().toISOString(); s.aft = null;
     }
     while (s.start && n < 80) {
-      const j = await gql(PQ, { o: O, r: rn, a: s.aft });
+      const j = await gql(PQ, { o: ow(rn), r: rn, a: s.aft });
       n++;
       const pr = j.repository.pullRequests, pp = (db.p[rn] ||= {});
       for (const q of pr.nodes) { const v = pt(q); if (v) pp[q.number] = v; }
@@ -138,7 +149,7 @@ async function live() {
   if (!db.r.length || lbusy) return;
   lbusy = 1;
   try {
-    const q = `query($s:GitTimestamp){${db.r.map((r, i) => `r${i}:repository(owner:"${O}",name:${JSON.stringify(r.n)}){pullRequests(first:30,orderBy:{field:UPDATED_AT,direction:DESC}){nodes{${PF}}} defaultBranchRef{target{...on Commit{history(first:100,since:$s){nodes{oid committedDate author{user{login databaseId}}}}}}}}`).join(' ')}}`;
+    const q = `query($s:GitTimestamp){${db.r.map((r, i) => `r${i}:repository(owner:${JSON.stringify(r.o || O)},name:${JSON.stringify(r.n)}){pullRequests(first:30,orderBy:{field:UPDATED_AT,direction:DESC}){nodes{${PF}}} defaultBranchRef{target{...on Commit{history(first:100,since:$s){nodes{oid committedDate author{user{login databaseId}}}}}}}}`).join(' ')}}`;
     const j = await gql(q, { s: new Date(Date.now() - 15 * 60e3).toISOString() });
     let ch = 0;
     db.r.forEach((r, i) => {
@@ -180,6 +191,7 @@ function build() {
   const days = Array.from({ length: ND }, (_, i) => ({ d: (d0 + i) * 86400, o: 0, x: 0, m: new Array(rs.length).fill(0), a: new Set(), n: 0 }));
   const heat = Array.from({ length: 7 }, () => new Array(24).fill(0));
   const hist = new Array(TB.length).fill(0);
+  const rc = new Set(db.r.filter((r) => r.c).map((r) => r.n));
   const ppl = new Map(), wks = new Map(), rp = rs.map((n) => ({ n, m: 0, o: 0, op: 0, c: new Set(), t: [], cm: 0, b: null }));
   const all = [];
   let tm = 0, op = 0, m1 = 0, m7 = 0, t30 = [];
@@ -206,7 +218,7 @@ function build() {
   for (const rn of rs) {
     const R = rp[ri[rn]];
     for (const [nr, [l, c, m, x, ti, by]] of Object.entries(db.p[rn] || {})) {
-      if (by && !bot(by)) mb.set(by, (mb.get(by) || 0) + 1);
+      if (by && !bot(by) && !rc.has(rn)) mb.set(by, (mb.get(by) || 0) + 1);
       if (bot(l)) continue;
       const p = np(l, c);
       p.o++; R.o++; R.c.add(l);
@@ -275,7 +287,7 @@ function build() {
   S = {
     at: Math.round(now), sync: !db.r.length ? 1 : db.r.filter((r) => !db.a[r.n] || !db.a[r.n].cur || !db.ca[r.n] || !db.ca[r.n].cur).length, err,
     k: { c: ppl.size, m: tm, o: op, cm: tc, m1, m7, t: med(t30), n30, pr: all.length && rp.reduce((s, r) => s + r.o, 0) },
-    rs: rp.map((r) => ({ n: r.n, m: r.m, o: r.o, op: r.op, c: r.c.size, t: med(r.t), cm: r.cm, b: r.b, q: (db.q || {})[r.n] || null, s: (db.r.find((x) => x.n === r.n) || {}).s || 0 })),
+    rs: rp.map((r) => ({ n: r.n, m: r.m, o: r.o, op: r.op, c: r.c.size, t: med(r.t), cm: r.cm, b: r.b, q: (db.q || {})[r.n] || null, s: (db.r.find((x) => x.n === r.n) || {}).s || 0, w: ow(r.n), x: rc.has(r.n) ? 1 : 0 })),
     v: ++ver, pre, days: days.map((d) => [d.d, d.o, d.x, d.m, d.a.size, d.n]), weeks, heat, hist, lead, team, recent: all.slice(0, 40),
   };
   Sz = zlib.gzipSync(JSON.stringify(S));
@@ -321,9 +333,10 @@ const GQ = `query($q:String!,$r:String!,$i:String!){
  r:search(query:$r,type:ISSUE,first:30){nodes{...on PullRequest{number title url createdAt repository{name} author{login}}}}
  i:search(query:$i,type:ISSUE,first:30){issueCount nodes{...on Issue{number title url createdAt repository{name} comments{totalCount}}}}}`;
 
+const sco = () => [`org:${O}`, ...db.r.filter((r) => r.c).map((r) => `repo:${r.o}/${r.n}`)].join(' ');
 async function me(u) {
   const h = { ...hd, Authorization: 'Bearer ' + u.t, 'Content-Type': 'application/json' };
-  const r = await fetch('https://api.github.com/graphql', { method: 'POST', headers: h, signal: AbortSignal.timeout(25000), body: JSON.stringify({ query: GQ, variables: { q: `author:${u.l} org:${O} is:pr is:open`, r: `review-requested:${u.l} org:${O} is:pr is:open`, i: `author:${u.l} org:${O} is:issue is:open` } }) });
+  const r = await fetch('https://api.github.com/graphql', { method: 'POST', headers: h, signal: AbortSignal.timeout(25000), body: JSON.stringify({ query: GQ, variables: { q: `author:${u.l} ${sco()} is:pr is:open`, r: `review-requested:${u.l} ${sco()} is:pr is:open`, i: `author:${u.l} ${sco()} is:issue is:open` } }) });
   if (r.status === 401) return null;
   const j = await r.json();
   if (!j.data) throw new Error('graphql');

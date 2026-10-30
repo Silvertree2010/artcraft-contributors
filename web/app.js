@@ -6,7 +6,7 @@ const AP = {
   designcraft: ['DesignCraft', '#7bb51c', '#457008', '#a6e04a'], figcraft: ['FigCraft', '#02da96', '#047a56', '#4fe8b6'],
   wordcraft: ['WordCraft', '#3f5fe0', '#2a44b8', '#8ea2ff'], soundcraft: ['SoundCraft', '#1fa5c9', '#0e7290', '#5fd0ee'],
   deckcraft: ['DeckCraft', '#f07a1e', '#a84f0a', '#ffa060'], cadcraft: ['CADCraft', '#3ea6e8', '#1a6fa8', '#7cc8ff'],
-  gridcraft: ['GridCraft', '#1f9d55', '#12703a', '#4fd68a'], artcraft: ['ArtCraft', '#4e7bfb', '#2a52c4', '#8aa8ff'],
+  gridcraft: ['GridCraft', '#1f9d55', '#12703a', '#4fd68a'], solidcraft: ['SolidCraft', '#46a1fb', '#1653ae', '#8cc4ff'], artcraft: ['ArtCraft', '#4e7bfb', '#2a52c4', '#8aa8ff'],
   'craft-launcher': ['Launcher', '#8a8a90', '#55555c', '#b5b5bb'], anicraft: ['AniCraft', '#c25bd6', '#8e2fa3', '#e29af0'],
 };
 const NEU = ['#9a958c', '#6b665e', '#c2bdb4'];
@@ -16,6 +16,7 @@ const ap = (n) => AP[n.toLowerCase()] || [n, ...NEU];
 const col = (n) => ap(n)[1];
 const ink = (n) => ap(n)[dk.matches ? 3 : 2];
 const ico = (n) => AP[n.toLowerCase()] && !/^(artcraft|craft-launcher|anicraft)$/.test(n.toLowerCase()) ? `icons/${n.toLowerCase()}.png` : 'icons/artcraft-launcher.svg';
+const gu = (n) => `https://github.com/${encodeURIComponent((S && S.rs.find((x) => x.n === n) || {}).w || 'storytold')}/${encodeURIComponent(n)}`;
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const av = (l, i, s = 48) => i ? `https://avatars.githubusercontent.com/u/${i}?s=${s}&v=4` : `https://avatars.githubusercontent.com/${encodeURIComponent(l)}?s=${s}`;
@@ -167,7 +168,7 @@ function heat() {
 function apps() {
   const r = S.rs.filter((x) => x.o || x.cm).sort((a, b) => b.cm - a.cm || b.m - a.m), mx = Math.max(1, ...r.map((x) => x.cm));
   return `<div class="tw"><table><thead><tr><th>App</th><th class="n">Commits</th><th class="n hide-s">Merged</th><th class="hide-s">Built by</th><th style="width:18%" class="hide-s"></th></tr></thead><tbody>${r.map((x) => `<tr>
-    <td><a class="app" href="https://github.com/storytold/${esc(x.n)}" target="_blank" rel="noopener" style="color:${ink(x.n)}"><img src="${ico(x.n)}" alt="">${esc(ap(x.n)[0])}</a></td>
+    <td style="white-space:nowrap"><a class="app" href="${esc(gu(x.n))}" target="_blank" rel="noopener" style="color:${ink(x.n)};display:inline-flex;vertical-align:middle"><img src="${ico(x.n)}" alt="">${esc(ap(x.n)[0])}</a>${x.x ? ' <span class="st n" style="margin-left:8px;vertical-align:middle" title="Maintained outside ArtCraft">Community</span>' : ''}</td>
     <td class="n">${nk('a.c.' + x.n, x.cm)}</td><td class="n hide-s dim">${nk('a.m.' + x.n, x.m)}</td><td class="hide-s" style="white-space:nowrap">${x.b ? `<a class="dim" href="#/u/${encodeURIComponent(x.b)}">${esc(x.b)}</a>` : '<span class="dim">–</span>'}</td>
     <td class="hide-s"><div class="bar"><i style="width:${x.cm / mx * 100}%;background:${col(x.n)}"></i></div></td></tr>`).join('')}</tbody></table></div>`;
 }
@@ -216,7 +217,7 @@ function segs() {
 
 function feed() {
   return `<ul class="feed">${S.recent.slice(0, 14).map(([m, rn, nr, ti, l]) => `<li><img src="${ico(rn)}" alt="${esc(ap(rn)[0])}" title="${esc(ap(rn)[0])}">
-    <span class="t"><a href="https://github.com/storytold/${esc(rn)}/pull/${nr}" target="_blank" rel="noopener">${esc(ti)}</a><br><span class="m"><a href="#/u/${encodeURIComponent(l)}" class="dim">${esc(l)}</a></span></span><span class="m">${ago(m)}</span></li>`).join('')}</ul>`;
+    <span class="t"><a href="${esc(gu(rn))}/pull/${nr}" target="_blank" rel="noopener">${esc(ti)}</a><br><span class="m"><a href="#/u/${encodeURIComponent(l)}" class="dim">${esc(l)}</a></span></span><span class="m">${ago(m)}</span></li>`).join('')}</ul>`;
 }
 
 function overview() {
@@ -290,10 +291,10 @@ function prof(d, l, mine) {
     <div><span class="lbl">Reverted</span><b>${N(r[15])}</b></div>
     <div><span class="lbl">Median merge</span><b>${du(r[11])}</b></div>
   </div>
-  ${r[13] && r[13].length ? `<section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Built</h2><span class="sub">Top committer</span></div><div class="leg" style="margin:0">${r[13].map((n) => `<a class="app" style="color:${ink(n)};border:1px solid var(--line);padding:6px 10px" href="https://github.com/storytold/${esc(n)}" target="_blank" rel="noopener"><img src="${ico(n)}" alt="">${esc(ap(n)[0])}</a>`).join('')}</div></section>` : ''}
+  ${r[13] && r[13].length ? `<section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Built</h2><span class="sub">Top committer</span></div><div class="leg" style="margin:0">${r[13].map((n) => `<a class="app" style="color:${ink(n)};border:1px solid var(--line);padding:6px 10px" href="${esc(gu(n))}" target="_blank" rel="noopener"><img src="${ico(n)}" alt="">${esc(ap(n)[0])}</a>`).join('')}</div></section>` : ''}
   ${d.prs.length ? `<section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Per day</h2><span class="sub"><span style="color:var(--accent-ink)">Merged</span> and opened</span></div>${weekly(d.prs)}</section>` : ''}
   <div class="grid g32">
-    <section class="box"><div class="box-h"><h2>Pull requests</h2><span class="sub">${N(d.prs.length)}</span></div>${d.prs.length ? '' : '<p class="empty">None.</p>'}<ul class="feed">${d.prs.slice(0, lp).map((p) => `<li><img src="${ico(p[0])}" alt="${esc(ap(p[0])[0])}" title="${esc(ap(p[0])[0])}"><span class="t"><a href="https://github.com/storytold/${esc(p[0])}/pull/${p[1]}" target="_blank" rel="noopener">${esc(p[5])}</a><br><span class="m">${esc(ap(p[0])[0])} #${p[1]}, ${dt(p[2], 1)}${p[3] ? `, merged in ${du(p[3] - p[2])}` : ''}</span></span>${stat(p)}</li>`).join('')}</ul>${d.prs.length > lp ? `<a class="btn more" target="_blank" rel="noopener" href="https://github.com/pulls?q=${encodeURIComponent(`is:pr author:${l} org:storytold`)}">All on GitHub</a>` : ''}</section>
+    <section class="box"><div class="box-h"><h2>Pull requests</h2><span class="sub">${N(d.prs.length)}</span></div>${d.prs.length ? '' : '<p class="empty">None.</p>'}<ul class="feed">${d.prs.slice(0, lp).map((p) => `<li><img src="${ico(p[0])}" alt="${esc(ap(p[0])[0])}" title="${esc(ap(p[0])[0])}"><span class="t"><a href="${esc(gu(p[0]))}/pull/${p[1]}" target="_blank" rel="noopener">${esc(p[5])}</a><br><span class="m">${esc(ap(p[0])[0])} #${p[1]}, ${dt(p[2], 1)}${p[3] ? `, merged in ${du(p[3] - p[2])}` : ''}</span></span>${stat(p)}</li>`).join('')}</ul>${d.prs.length > lp ? `<a class="btn more" target="_blank" rel="noopener" href="https://github.com/pulls?q=${encodeURIComponent(`is:pr author:${l} org:storytold${S.rs.filter((x) => x.x).map((x) => ` repo:${x.w}/${x.n}`).join('')}`)}">All on GitHub</a>` : ''}</section>
     <section class="box"><div class="box-h"><h2>Apps</h2></div><table><thead><tr><th>App</th><th class="n">Commits</th><th class="n">Merged</th><th style="width:30%"></th></tr></thead><tbody>${ab.map(([n, [m, c]]) => `<tr><td><span class="app" style="color:${ink(n)}"><img src="${ico(n)}" alt="">${esc(ap(n)[0])}</span></td><td class="n">${N(c)}</td><td class="n dim">${N(m)}</td><td><div class="bar"><i style="width:${c / mx * 100}%;background:${col(n)}"></i></div></td></tr>`).join('') || '<tr><td class="dim">Nothing yet</td></tr>'}</tbody></table></section>
   </div>`;
 }
