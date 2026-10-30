@@ -194,7 +194,7 @@ function heat(M = S.heat, u = 'merged') {
 const pc0 = (x) => x == null ? '–' : Math.round(x * 100) + '%';
 const QG = { OK: ['g', 'Passed'], ERROR: ['b', 'Failed'], WARN: ['w', 'Warning'] };
 const tmt = (x) => x[17] ? `Merged ${N(x[17])} PRs, so likely has write access` : 'Public member of the storytold org';
-const TAGS = { mmexicann: '67', wanikhawar: 'Cat', ashup1: 'Ash' };
+const TAGS = { mmexicann: '67', wanikhawar: 'Cat', ashup1: 'Ash', fredapps: 'Rich' };
 const tb = (x) => (x[16] ? `<span class="st n tm" data-t="${esc(tmt(x))}">Team</span>` : '') + (TAGS[x[0].toLowerCase()] ? `<span class="st n tm">${esc(TAGS[x[0].toLowerCase()])}</span>` : '');
 const blt = (b) => !b || !b.length ? '<span class="dim">–</span>' : b.slice(0, 2).map((n) => `<span style="color:${ink(n)}">${esc(ap(n)[0])}</span>`).join(', ') + (b.length > 2 ? ` <span class="dim">+${b.length - 2}</span>` : '');
 
