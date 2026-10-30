@@ -451,7 +451,7 @@ function prof(d, l, mine) {
   for (const p of d.prs) if (p[3]) (by[p[0]] ||= [0, 0])[0]++;
   for (const [n, c] of d.cm || []) (by[n] ||= [0, 0])[1] = c;
   const ab = Object.entries(by).sort((a, b) => b[1][1] - a[1][1] || b[1][0] - a[1][0]), mx = Math.max(1, ...ab.map((x) => x[1][1]));
-  const lp = mine ? 30 : 12, sk = strk(d.ua || {}), bu = `${location.origin}/badge/u/${encodeURIComponent(r[0])}.svg`, md = `[![ArtCraft contributions](${bu})](${location.origin}/u/${encodeURIComponent(r[0])})`;
+  const lp = 12, sk = strk(d.ua || {}), bu = `${location.origin}/badge/u/${encodeURIComponent(r[0])}.svg`, md = `[![ArtCraft contributions](${bu})](${location.origin}/u/${encodeURIComponent(r[0])})`;
   return `${bdg(r, sk)}<div class="kpi">
     <div><span class="lbl">Rank</span><b>${d.rank} <span class="sub" style="font:400 14px Inter;display:inline">of ${N(d.of)}</span></b></div>
     <div><span class="lbl">Merged</span><b>${nk('p.m', r[2])}</b><span class="sub">${pc0(r[14])} merge rate, ${N(r[15])} reverted</span></div>
@@ -513,24 +513,38 @@ function chips(p) {
   return c;
 }
 
+const MK = 'me1';
+const rme = () => { try { const v = JSON.parse(sessionStorage.getItem(MK) || 'null'); return v && v.l === (ME && ME.l) ? v.m : null; } catch { return null; } };
+const wme = (m) => { try { sessionStorage.setItem(MK, JSON.stringify({ l: ME.l, m })); } catch {} };
+function mepr(m) {
+  const sc = (p) => chips(p).filter((c) => c[0] === 'b' || c[0] === 'a').length;
+  const op = m.open.slice().sort((a, b) => sc(b) - sc(a) || ts(b.up) - ts(a.up)), nd = op.filter((p) => sc(p)).length;
+  const gl = (q) => `https://github.com/pulls?q=${encodeURIComponent(q)}`;
+  const more = (n, sh, q) => n > sh ? `<a class="btn more" target="_blank" rel="noopener" href="${esc(gl(q))}">All ${N(n)} on GitHub</a>` : '';
+  const $s = $('#mesub'); if ($s) $s.textContent = `${N(m.on ?? op.length)} open PRs${nd ? `, ${nd} need you` : ''}`;
+  return `<section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Your open pull requests</h2><span class="sub">${m.on > op.length ? `Latest ${op.length} of ${N(m.on)}` : ''}</span></div>${op.length ? `<ul class="feed">${op.map((p) => `<li><img src="${ico(p.r)}" alt="${esc(ap(p.r)[0])}" title="${esc(ap(p.r)[0])}"><span class="t"><a href="${esc(p.u)}" target="_blank" rel="noopener">${esc(p.t)}</a><br><span class="m">${esc(ap(p.r)[0])} #${p.n}, opened ${ago(ts(p.c))}, ${p.cc} comments${p.rv ? `, last review ${esc(p.rv.a || '')} ${ago(ts(p.rv.at))}` : ''}</span></span><span class="sts">${chips(p).map(([k, t]) => `<span class="st ${k}">${t}</span>`).join('')}</span></li>`).join('')}</ul>${more(m.on, op.length, `is:pr is:open author:${ME.l} org:storytold`)}` : '<p class="empty">No open pull requests.</p>'}</section>
+  <div class="grid g2">
+    <section class="box"><div class="box-h"><h2>Review requests</h2></div>${m.rq.length ? `<ul class="feed">${m.rq.map((p) => `<li><img src="${ico(p.r)}" alt=""><span class="t"><a href="${esc(p.u)}" target="_blank" rel="noopener">${esc(p.t)}</a><br><span class="m">${esc(p.a || '')}, ${esc(ap(p.r)[0])} #${p.n}</span></span><span class="m">${ago(ts(p.c))}</span></li>`).join('')}</ul>${more(m.rn, m.rq.length, `is:pr is:open review-requested:${ME.l} org:storytold`)}` : '<p class="empty">None.</p>'}</section>
+    <section class="box"><div class="box-h"><h2>Your open issues</h2></div>${m.is.length ? `<ul class="feed">${m.is.map((p) => `<li><img src="${ico(p.r)}" alt=""><span class="t"><a href="${esc(p.u)}" target="_blank" rel="noopener">${esc(p.t)}</a><br><span class="m">${esc(ap(p.r)[0])} #${p.n}, ${p.cc} comments</span></span><span class="m">${ago(ts(p.c))}</span></li>`).join('')}</ul>${m.inn > m.is.length ? `<a class="btn more" target="_blank" rel="noopener" href="${esc(`https://github.com/issues?q=${encodeURIComponent(`is:issue is:open author:${ME.l} org:storytold`)}`)}">All ${N(m.inn)} on GitHub</a>` : ''}` : '<p class="empty">None.</p>'}</section>
+  </div>`;
+}
 async function mine() {
   if (!ME) return `<div class="top"><h1>You</h1></div><div class="gate"><h2>Your pull requests, review requests and issues</h2><p>Only you see this. The server keeps no copy of your data or sign-in.</p>${ON ? `<a class="btn pri" href="/auth/login">${GH}Sign in with GitHub</a>` : '<p>Sign-in is not set up yet.</p>'}</div>`;
-  let m, d;
-  try { [m, d] = await Promise.all([get('/api/me'), get('/api/u/' + encodeURIComponent(ME.l)).catch(() => null)]); }
-  catch (e) { if (e.s === 401) { ME = null; hdr(); return mine(); } return `<div class="err">Could not load your data from GitHub.</div>`; }
-  const sc = (p) => chips(p).filter((c) => c[0] === 'b' || c[0] === 'a').length;
-  const op = m.open.slice().sort((a, b) => sc(b) - sc(a) || ts(b.up) - ts(a.up));
-  const nd = op.filter((p) => sc(p)).length;
-  return `<div class="prof"><img src="${av(ME.l, ME.i, 144)}" alt=""><div class="x"><h1>${esc(ME.l)}</h1><div class="sub">${op.length} open PRs${nd ? `, ${nd} need you` : ''}</div></div></div>
-  <p class="note">Only you see this. The server keeps no copy.</p>
-  <section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Your open pull requests</h2></div>${op.length ? `<ul class="feed">${op.map((p) => `<li><img src="${ico(p.r)}" alt="${esc(ap(p.r)[0])}" title="${esc(ap(p.r)[0])}"><span class="t"><a href="${esc(p.u)}" target="_blank" rel="noopener">${esc(p.t)}</a><br><span class="m">${esc(ap(p.r)[0])} #${p.n}, opened ${ago(ts(p.c))}, ${p.cc} comments${p.rv ? `, last review ${esc(p.rv.a || '')} ${ago(ts(p.rv.at))}` : ''}</span></span><span class="sts">${chips(p).map(([k, t]) => `<span class="st ${k}">${t}</span>`).join('')}</span></li>`).join('')}</ul>` : '<p class="empty">No open pull requests.</p>'}</section>
-  <div class="grid g2">
-    <section class="box"><div class="box-h"><h2>Review requests</h2></div>${m.rq.length ? `<ul class="feed">${m.rq.map((p) => `<li><img src="${ico(p.r)}" alt=""><span class="t"><a href="${esc(p.u)}" target="_blank" rel="noopener">${esc(p.t)}</a><br><span class="m">${esc(p.a || '')}, ${esc(ap(p.r)[0])} #${p.n}</span></span><span class="m">${ago(ts(p.c))}</span></li>`).join('')}</ul>` : '<p class="empty">None.</p>'}</section>
-    <section class="box"><div class="box-h"><h2>Your open issues</h2></div>${m.is.length ? `<ul class="feed">${m.is.map((p) => `<li><img src="${ico(p.r)}" alt=""><span class="t"><a href="${esc(p.u)}" target="_blank" rel="noopener">${esc(p.t)}</a><br><span class="m">${esc(ap(p.r)[0])} #${p.n}, ${p.cc} comments</span></span><span class="m">${ago(ts(p.c))}</span></li>`).join('')}</ul>` : '<p class="empty">None.</p>'}</section>
-  </div>
+  const d = await get('/api/u/' + encodeURIComponent(ME.l)).catch(() => null), c = rme();
+  return `<div class="prof"><img src="${av(ME.l, ME.i, 144)}" alt=""><div class="x"><h1>${esc(ME.l)}</h1><div class="sub" id="mesub">${c ? '' : 'Loading your pull requests…'}</div></div></div>
+  <div id="mex">${c ? mepr(c) : '<p class="empty">Loading from GitHub…</p>'}</div>
   ${d ? prof(d, ME.l, 1) : ''}`;
 }
-
+async function fillme(id) {
+  try {
+    const m = await get('/api/me');
+    wme(m);
+    const x = $('#mex'); if (id === seq && x) { x.innerHTML = mepr(m); }
+  } catch (e) {
+    if (e.s === 401) { ME = null; hdr(); route(); return; }
+    const x = $('#mex'); if (id === seq && x && !rme()) x.innerHTML = '<div class="err">Could not load your data from GitHub.</div>';
+  }
+}
 function apage(d) {
   const r = d.row || {}, n = d.n, c = col(n);
   const ti = d.days.slice(Math.max(0, d.days.findIndex((x) => x[1] || x[2] || x[3]) - 2));
@@ -658,7 +672,7 @@ async function route() {
   if (h !== lh) { NV.clear(); lh = h; }
   hdr();
   const m = $('#m');
-  if (p === 'me') { m.innerHTML = '<p class="empty">Loading…</p>'; const x = await mine(); if (id === seq) m.innerHTML = x; }
+  if (p === 'me') { m.innerHTML = '<p class="empty">Loading…</p>'; const x = await mine(); if (id === seq) { m.innerHTML = x; if (ME) fillme(id); } }
   else if (!S) { m.innerHTML = '<p class="empty">Loading…</p>'; return; }
   else if (p === 'u' && a) { m.innerHTML = '<p class="empty">Loading…</p>'; const x = await user(decodeURIComponent(a)); if (id === seq) m.innerHTML = x; }
   else if (p === 'people') m.innerHTML = people();

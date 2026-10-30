@@ -633,24 +633,29 @@ function js(q, s, o, c = 'no-store') {
 }
 const no = (s, c = 404, t = 'not found') => { s.writeHead(c, { 'Content-Type': 'text/plain' }); s.end(t); };
 
-const GQ = `query($q:String!,$r:String!,$i:String!){
- o:search(query:$q,type:ISSUE,first:50){nodes{...on PullRequest{number title url isDraft createdAt updatedAt mergeable reviewDecision repository{name}
+const GQO = `query($q:String!){o:search(query:$q,type:ISSUE,first:20){issueCount nodes{...on PullRequest{number title url isDraft createdAt updatedAt mergeable reviewDecision repository{name}
   comments(last:1){totalCount nodes{author{login} createdAt}}
   reviews(last:1){nodes{state author{login} submittedAt}}
-  commits(last:1){nodes{commit{committedDate statusCheckRollup{state}}}}}}}
- r:search(query:$r,type:ISSUE,first:30){nodes{...on PullRequest{number title url createdAt repository{name} author{login}}}}
- i:search(query:$i,type:ISSUE,first:30){issueCount nodes{...on Issue{number title url createdAt repository{name} comments{totalCount}}}}}`;
+  commits(last:1){nodes{commit{committedDate statusCheckRollup{state}}}}}}}}`;
+const GQR = `query($q:String!){r:search(query:$q,type:ISSUE,first:10){issueCount nodes{...on PullRequest{number title url createdAt repository{name} author{login}}}}}`;
+const GQI = `query($q:String!){i:search(query:$q,type:ISSUE,first:10){issueCount nodes{...on Issue{number title url createdAt repository{name} comments{totalCount}}}}}`;
 
 const sco = () => [`org:${O}`, ...db.r.filter((r) => r.c).map((r) => `repo:${r.o}/${r.n}`)].join(' ');
 async function me(u) {
   const h = { ...hd, Authorization: 'Bearer ' + u.t, 'Content-Type': 'application/json' };
-  const r = await fetch('https://api.github.com/graphql', { method: 'POST', headers: h, signal: AbortSignal.timeout(25000), body: JSON.stringify({ query: GQ, variables: { q: `author:${u.l} ${sco()} is:pr is:open`, r: `review-requested:${u.l} ${sco()} is:pr is:open`, i: `author:${u.l} ${sco()} is:issue is:open` } }) });
-  if (r.status === 401) return null;
-  const j = await r.json();
-  if (!j.data) throw new Error('graphql');
-  const d = j.data;
+  const g = async (query, q) => {
+    const r = await fetch('https://api.github.com/graphql', { method: 'POST', headers: h, signal: AbortSignal.timeout(25000), body: JSON.stringify({ query, variables: { q } }) });
+    if (r.status === 401) return null;
+    const j = await r.json();
+    if (!j.data) throw new Error('graphql');
+    return j.data;
+  };
+  const x = await Promise.all([g(GQO, `author:${u.l} ${sco()} is:pr is:open sort:updated-desc`), g(GQR, `review-requested:${u.l} ${sco()} is:pr is:open sort:updated-desc`), g(GQI, `author:${u.l} ${sco()} is:issue is:open sort:updated-desc`)]);
+  if (x.some((v) => !v)) return null;
+  const d = Object.assign({}, ...x);
   return {
-    open: d.o.nodes.filter((n) => n.number).map((n) => {
+    on: d.o.issueCount, rn: d.r.issueCount, inn: d.i.issueCount,
+open: d.o.nodes.filter((n) => n.number).map((n) => {
       const lc = n.commits.nodes[0]?.commit, cm = n.comments.nodes[0], rv = n.reviews.nodes[0];
       const pu = lc ? Date.parse(lc.committedDate) : 0;
       return { r: n.repository.name, n: n.number, t: n.title, u: n.url, dr: n.isDraft, c: n.createdAt, up: n.updatedAt, mg: n.mergeable, rd: n.reviewDecision, ci: lc?.statusCheckRollup?.state || null, cc: n.comments.totalCount,
