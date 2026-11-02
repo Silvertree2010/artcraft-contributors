@@ -246,3 +246,5 @@ td.shc { white-space: nowrap; }
 .ft a:hover { color: var(--strong); }
 #lead th, #lead td { padding-left: 7px; padding-right: 7px; }
 #lead .shb { width: 36px; }
+#lead .tw { overflow-x: clip; }
+@media (max-width: 640px) { #lead .who .tm { display: none; } #lead th, #lead td { padding-left: 5px; padding-right: 5px; } }
