@@ -228,3 +228,17 @@ form.box { margin: 0; }
 .nav::-webkit-scrollbar { display: none; }
 .btn.ico { width: 34px; padding: 0; justify-content: center; }
 @media (max-width: 1100px) { .brand span { display: none; } .hd-in { gap: 16px; } }
+
+.top .seg#src { margin-left: auto; }
+.shp { height: 30px; border: 1px solid var(--line2); background: var(--bg); padding: 0 8px; font-size: 12.5px; max-width: 160px; }
+.box-h .shp { margin-left: auto; }
+.box-h .shp + .seg { margin-left: 0; }
+td.shc { white-space: nowrap; }
+.shv { display: inline-block; min-width: 3.4em; }
+.shb { display: inline-block; vertical-align: middle; width: 44px; height: 4px; background: var(--sunken); margin-left: 6px; }
+.shb i { display: block; height: 100%; background: var(--accent); }
+@media (max-width: 640px) { .shb { display: none; } .shv { min-width: 0; } }
+.ft { border-top: 1px solid var(--line); margin-top: 48px; }
+.ft-in { max-width: 1240px; margin: 0 auto; padding: 18px 24px 28px; display: flex; gap: 24px; flex-wrap: wrap; justify-content: space-between; color: var(--muted); font-size: 12.5px; }
+.ft a { color: var(--muted); text-decoration: underline; text-underline-offset: 2px; }
+.ft a:hover { color: var(--strong); }

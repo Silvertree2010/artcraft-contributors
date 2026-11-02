@@ -371,17 +371,18 @@ const med = (a) => { if (!a.length) return null; const s = [...a].sort((x, y) =>
 const TB = [3600, 3 * 3600, 6 * 3600, 12 * 3600, 86400, 2 * 86400, 4 * 86400, 7 * 86400, Infinity];
 const wk = (t) => Math.floor((t / 86400 + 3) / 7);
 
-let S = null, Sz = null, U = new Map(), C = new Map(), UA = new Map(), RV = new Map(), ver = 0;
+let S = null, Sz = null, SV = {}, U = new Map(), C = new Map(), UA = new Map(), RV = new Map(), ver = 0;
 
-function build() {
+function bd(fk) {
   const now = Date.now() / 1000;
-  const rs = db.r.map((r) => r.n).filter((n) => db.p[n] || db.c[n]);
+  const RR = fk === 'a' ? db.r : db.r.filter((r) => fk === 't' ? r.c : !r.c);
+  const rs = RR.map((r) => r.n).filter((n) => db.p[n] || db.c[n]);
   const ri = Object.fromEntries(rs.map((n, i) => [n, i]));
   const ND = 90, d0 = Math.floor(now / 86400) - ND + 1;
   const days = Array.from({ length: ND }, (_, i) => ({ d: (d0 + i) * 86400, o: 0, x: 0, m: new Array(rs.length).fill(0), a: new Set(), n: 0, c: 0, r: 0 }));
   const heat = Array.from({ length: 7 }, () => new Array(24).fill(0));
   const hist = new Array(TB.length).fill(0);
-  const rc = new Set(db.r.filter((r) => r.c).map((r) => r.n));
+  const rc = new Set(RR.filter((r) => r.c).map((r) => r.n));
   const ppl = new Map(), wks = new Map(), rp = rs.map((n) => ({ n, m: 0, o: 0, op: 0, c: new Set(), t: [], cm: 0, b: null }));
   const all = [];
   let tm = 0, op = 0, m1 = 0, m7 = 0, t30 = [];
@@ -498,7 +499,7 @@ function build() {
   }
   const io = new Map();
   let iop = 0, i30 = 0, x30 = 0, np30 = 0, ib = 0, ifr = 0, iq = 0, it2 = 0; const ifs = [], irs = {};
-  for (const r of db.r) {
+  for (const r of RR) {
     const ii = db.is[r.n]; if (!ii) continue;
     const z = (irs[r.n] = { o: 0, b: 0, f: 0, q: 0, o30: 0, x30: 0, fr: [] });
     for (const [a, c, x, k, fr, rsn] of Object.values(ii)) {
@@ -509,15 +510,15 @@ function build() {
     }
     z.fr = med(z.fr);
   }
-  for (const x of lead) { const v = rvp.get(x[0]) || [0, 0, 0]; x.push(tn.has(x[0].toLowerCase()) ? 1 : 0, mb.get(x[0]) || 0, ppl.get(x[0]).c7, ppl.get(x[0]).c30, v[0], v[1], v[2], io.get(x[0]) || 0); }
+  for (const x of lead) { const v = rvp.get(x[0]) || [0, 0, 0]; x.push(tn.has(x[0].toLowerCase()) ? 1 : 0, mb.get(x[0]) || 0, ppl.get(x[0]).c7, ppl.get(x[0]).c30, v[0], v[1], v[2], io.get(x[0]) || 0, ppl.get(x[0]).r); }
   const rvl = [...rvp.entries()].map(([l, v]) => [l, db.u[l] || 0, v[0], v[1], v[2], Object.entries(v[3]).sort((a, b) => b[1] - a[1])[0][0]]).sort((a, b) => b[2] - a[2]);
   const SD = {}; let stt = 0;
-  for (const r of db.r) { const st = db.st[r.n]; if (!st || st.run && !st.top) continue; for (const [d, c] of Object.entries(st.d)) SD[d] = (SD[d] || 0) + c; }
+  for (const r of RR) { const st = db.st[r.n]; if (!st || st.run && !st.top) continue; for (const [d, c] of Object.entries(st.d)) SD[d] = (SD[d] || 0) + c; }
   const sdk = Object.keys(SD).map(Number).sort((a, b) => a - b);
   const swk = []; { let cum = 0, cw = null; for (const d of sdk) { cum += SD[d]; const w = Math.floor((d + 3) / 7); if (cw !== w) { swk.push([w * 7 * 86400 - 3 * 86400, cum]); cw = w; } else swk[swk.length - 1][1] = cum; } stt = cum; }
   const s90 = days.map((d) => SD[d.d / 86400] || 0);
   const dpd = {};
-  for (const r of db.r) { const h = db.dh[r.n] || []; for (let i = 1; i < h.length; i++) if (h[i][0] - h[i - 1][0] === 86400) dpd[h[i][0]] = (dpd[h[i][0]] || 0) + h[i][1] - h[i - 1][1]; }
+  for (const r of RR) { const h = db.dh[r.n] || []; for (let i = 1; i < h.length; i++) if (h[i][0] - h[i - 1][0] === 86400) dpd[h[i][0]] = (dpd[h[i][0]] || 0) + h[i][1] - h[i - 1][1]; }
   const X = db.dc, td = Math.floor(now / 86400), gday = (d) => d === Math.floor(X.f / 86400) || X.gp.some(([a, b]) => a < (d + 1) * 86400 && (b || now) > d * 86400);
   const f0 = X.f ? Math.max(Math.floor(X.f / 86400), td - 59) : td;
   const dcd = []; for (let d = f0; d <= td; d++) dcd.push([d * 86400, X.d[d] || 0, (X.u[d] || []).length, gday(d) ? 1 : 0]);
@@ -528,19 +529,18 @@ function build() {
   const nw7 = [...ppl.values()].filter((p) => now - p.f < 7 * 86400).length, c7t = [...ppl.values()].reduce((a, p) => a + p.c7, 0);
   all.sort((a, b) => b[0] - a[0]);
   const dd = (n, d) => { const h = db.dh[n] || [], c = h[h.length - 1]; if (!c) return null; const b = [...h].reverse().find((x) => x[0] <= c[0] - d * 86400); return b ? c[1] - b[1] : null; };
-  const dla = db.r.map((r) => r.n).filter((n) => db.dl[n] && db.dl[n].t).map((n) => { const o = db.dl[n], rl = o.rl.filter((x) => !x[3]).sort((a, b) => b[1] - a[1]); return { n, w: ow(n), x: rc.has(n) ? 1 : 0, t: o.t, p: o.p, a: o.a, f: o.f, br: o.br || null, d1: dd(n, 1), d7: dd(n, 7), rl: rl.slice(0, 12), nr: o.rl.length }; });
+  const dla = RR.map((r) => r.n).filter((n) => db.dl[n] && db.dl[n].t).map((n) => { const o = db.dl[n], rl = o.rl.filter((x) => !x[3]).sort((a, b) => b[1] - a[1]); return { n, w: ow(n), x: rc.has(n) ? 1 : 0, t: o.t, p: o.p, a: o.a, f: o.f, br: o.br || null, d1: dd(n, 1), d7: dd(n, 7), rl: rl.slice(0, 12), nr: o.rl.length }; });
   const n30 = [...ppl.values()].filter((p) => now - p.f < 30 * 86400).length;
-  S = {
-    at: Math.round(now), sync: !db.r.length ? 1 : db.r.filter((r) => !db.a[r.n] || !db.a[r.n].cur || !db.ca[r.n] || !db.ca[r.n].cur).length, err,
-    k: { c: ppl.size, m: tm, o: op, cm: tc, m1, m7, t: med(t30), n30, pr: all.length && rp.reduce((s, r) => s + r.o, 0), n7: nw7, c7: c7t, fr: med(frt), st: db.r.reduce((a, r) => a + (r.s || 0), 0), fk: db.r.reduce((a, r) => a + (r.f || 0), 0), s7: s90.slice(-7).reduce((a, b) => a + b, 0), rv: [...rvp.values()].reduce((a, v) => a + v[0], 0), rv7: [...rvp.values()].reduce((a, v) => a + v[2], 0) },
-    is: { o: iop, o30: i30, x30, np30, b: ib, f: ifr, q: iq, t: it2, fr: med(ifs), sy: db.r.filter((r) => !db.ia[r.n] || !db.ia[r.n].cur).length },
-    st: { wk: swk, d: s90, t: stt, sy: db.r.filter((r) => !db.st[r.n] || !db.st[r.n].top).length },
+  const s0 = {
+    at: Math.round(now), sync: !RR.length ? 1 : RR.filter((r) => !db.a[r.n] || !db.a[r.n].cur || !db.ca[r.n] || !db.ca[r.n].cur).length, err,
+    k: { c: ppl.size, m: tm, o: op, cm: tc, m1, m7, t: med(t30), n30, pr: all.length && rp.reduce((s, r) => s + r.o, 0), n7: nw7, c7: c7t, fr: med(frt), st: RR.reduce((a, r) => a + (r.s || 0), 0), fk: RR.reduce((a, r) => a + (r.f || 0), 0), s7: s90.slice(-7).reduce((a, b) => a + b, 0), rv: [...rvp.values()].reduce((a, v) => a + v[0], 0), rv7: [...rvp.values()].reduce((a, v) => a + v[2], 0) },
+    is: { o: iop, o30: i30, x30, np30, b: ib, f: ifr, q: iq, t: it2, fr: med(ifs), sy: RR.filter((r) => !db.ia[r.n] || !db.ia[r.n].cur).length },
+    st: { wk: swk, d: s90, t: stt, sy: RR.filter((r) => !db.st[r.n] || !db.st[r.n].top).length },
     dd: Object.entries(dpd).map(([d, v]) => [+d, v]).sort((a, b) => a[0] - b[0]).slice(-120),
     rvl: rvl.slice(0, 50), dc,
-    rs: rp.map((r) => ({ n: r.n, m: r.m, o: r.o, op: r.op, c: r.c.size, t: med(r.t), cm: r.cm, b: r.b, q: (db.q || {})[r.n] || null, s: (db.r.find((x) => x.n === r.n) || {}).s || 0, f: (db.r.find((x) => x.n === r.n) || {}).f || 0, w: ow(r.n), x: rc.has(r.n) ? 1 : 0, ci: db.ci[r.n] ? { n: db.ci[r.n].n, ok: db.ci[r.n].ok, med: db.ci[r.n].med, last: db.ci[r.n].last } : null, is: irs[r.n] || null, fr: med(rvr[r.n] || []), dl: db.dl[r.n] ? db.dl[r.n].t : 0 })),
-    v: ++ver, pre, days: days.map((d) => [d.d, d.o, d.x, d.m, d.a.size, d.n, d.c, d.r]), weeks, heat, hist, lead, team, recent: all.slice(0, 40), dl: dla,
+    rs: rp.map((r) => ({ n: r.n, m: r.m, o: r.o, op: r.op, c: r.c.size, t: med(r.t), cm: r.cm, b: r.b, q: (db.q || {})[r.n] || null, s: (RR.find((x) => x.n === r.n) || {}).s || 0, f: (RR.find((x) => x.n === r.n) || {}).f || 0, w: ow(r.n), x: rc.has(r.n) ? 1 : 0, ci: db.ci[r.n] ? { n: db.ci[r.n].n, ok: db.ci[r.n].ok, med: db.ci[r.n].med, last: db.ci[r.n].last } : null, is: irs[r.n] || null, fr: med(rvr[r.n] || []), dl: db.dl[r.n] ? db.dl[r.n].t : 0 })),
+    v: ver, pre, days: days.map((d) => [d.d, d.o, d.x, d.m, d.a.size, d.n, d.c, d.r]), weeks, heat, hist, lead, team, recent: all.slice(0, 40), dl: dla,
   };
-  Sz = zlib.gzipSync(JSON.stringify(S));
   const idx = new Map();
   for (const rn of rs) for (const [nr, v] of Object.entries(db.p[rn] || {})) {
     if (bot(v[0])) continue;
@@ -548,7 +548,13 @@ function build() {
     if (!idx.has(k)) idx.set(k, []);
     idx.get(k).push([rn, +nr, v[1], v[2], v[3], v[4]]);
   }
-  U = idx; C = CX; UA = ua; RV = rvp;
+  return { S: s0, Sz: zlib.gzipSync(JSON.stringify(s0)), U: idx, C: CX, UA: ua, RV: rvp };
+}
+function build() {
+  ver++;
+  const a = bd('a');
+  ({ S, Sz, U, C, UA, RV } = a);
+  SV = { a: Sz, s: bd('s').Sz, t: bd('t').Sz };
 }
 
 function vel(rn, tag, pub) {
@@ -675,7 +681,7 @@ open: d.o.nodes.filter((n) => n.number).map((n) => {
 }
 
 const xe = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c]));
-const AN = (n) => ({ 'craft-launcher': 'Launcher', cadcraft: 'CADCraft', pdfcraft: 'PdfCraft', anicraft: 'AniCraft' }[n.toLowerCase()] || n.replace(/^(\w)(\w*?)craft/i, (_, a, b) => a.toUpperCase() + b + 'Craft'));
+const AN = (n) => ({ 'craft-launcher': 'Launcher', cadcraft: 'CADCraft', pdfcraft: 'PdfCraft', anicraft: 'AniCraft', texturecraft: 'TextureCraft', 'craft-anything': 'Craft Anything' }[n.toLowerCase()] || n.replace(/^(\w)(\w*?)craft/i, (_, a, b) => a.toUpperCase() + b + 'Craft'));
 const nfm = new Intl.NumberFormat('en-US');
 function feedx(s) {
   const it = [
@@ -772,7 +778,7 @@ http.createServer(async (q, s) => {
     if (p === '/api/stats') {
       if (!Sz) return no(s, 503, 'warming up');
       s.writeHead(200, { 'Content-Type': 'application/json', 'Content-Encoding': 'gzip', 'Cache-Control': 'no-cache' });
-      return s.end(Sz);
+      return s.end(SV[u.searchParams.get('f')] || Sz);
     }
     if (p === '/api/v') { s.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); return s.end(`{"v":${ver},"b":"${BV}"}`); }
     if (p.startsWith('/api/u/')) {

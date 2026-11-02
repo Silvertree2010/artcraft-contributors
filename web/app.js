@@ -6,7 +6,7 @@ const AP = {
   designcraft: ['DesignCraft', '#7bb51c', '#457008', '#a6e04a'], figcraft: ['FigCraft', '#02da96', '#047a56', '#4fe8b6'],
   wordcraft: ['WordCraft', '#3f5fe0', '#2a44b8', '#8ea2ff'], soundcraft: ['SoundCraft', '#1fa5c9', '#0e7290', '#5fd0ee'],
   deckcraft: ['DeckCraft', '#f07a1e', '#a84f0a', '#ffa060'], cadcraft: ['CADCraft', '#3ea6e8', '#1a6fa8', '#7cc8ff'],
-  gridcraft: ['GridCraft', '#1f9d55', '#12703a', '#4fd68a'], solidcraft: ['SolidCraft', '#46a1fb', '#1653ae', '#8cc4ff'], artcraft: ['ArtCraft', '#4e7bfb', '#2a52c4', '#8aa8ff'],
+  gridcraft: ['GridCraft', '#1f9d55', '#12703a', '#4fd68a'], texturecraft: ['TextureCraft', '#c2672b', '#9c4a15', '#e58a4e'], 'craft-anything': ['Craft Anything', '#4e7bfb', '#1659c4', '#74aaff'], solidcraft: ['SolidCraft', '#46a1fb', '#1653ae', '#8cc4ff'], artcraft: ['ArtCraft', '#4e7bfb', '#2a52c4', '#8aa8ff'],
   'craft-launcher': ['Launcher', '#8a8a90', '#55555c', '#b5b5bb'], anicraft: ['AniCraft', '#c25bd6', '#8e2fa3', '#e29af0'],
 };
 const NEU = ['#9a958c', '#6b665e', '#c2bdb4'];
@@ -46,7 +46,10 @@ function roll() {
 const sa = (t) => { const s = Math.max(0, Math.round(Date.now() / 1000 - t)); return s < 60 ? s + 's ago' : ago(t); };
 setInterval(() => { const e = $('#upd'); if (e && S) e.textContent = sa(S.at); }, 1000);
 
-let BV0 = null, S = null, ME = null, ON = false, hid = new Set(), per = 'all', srt = null, lim = 50, q = '';
+let BV0 = null, S = null, ME = null, ON = false, hid = new Set(), per = 'all', srt = null, lim = 50, q = '', shp = '';
+let src = (() => { try { return localStorage.getItem('src') || 'a'; } catch { return 'a'; } })();
+const SRC = [['a', 'All'], ['s', 'Storytold'], ['t', '3rd party']];
+const srcs = () => `<div class="seg" id="src">${SRC.map(([k, t]) => `<button data-f="${k}" class="${src === k ? 'on' : ''}">${t}</button>`).join('')}</div>`;
 
 const tip = $('#tip');
 document.addEventListener('mousemove', (e) => {
@@ -201,28 +204,36 @@ const blt = (b) => !b || !b.length ? '<span class="dim">–</span>' : b.slice(0,
 const PI = { all: 2, '30d': 6, '7d': 5 }, CI = { all: 12, '30d': 19, '7d': 18 }, RI = { all: 20, '30d': 21, '7d': 22 };
 function lead(full) {
   const pc = PI[per], cc = CI[per], rc = RI[per];
-  let r = S.lead.filter((x) => x[pc] > 0 || x[cc] > 0 || x[rc] > 0 || per === 'all');
-  if (srt) r = r.slice().sort((a, b) => (a[srt[0]] == null) - (b[srt[0]] == null) || srt[1] * (a[srt[0]] - b[srt[0]]));
-  else r = r.slice().sort((a, b) => b[pc] - a[pc] || b[3] - a[3]);
+  if (shp && !S.rs.some((x) => x.n === shp)) shp = '';
+  const sv = (x) => shp ? ((x[24] || {})[shp] || 0) : x[pc];
+  const st = shp ? (S.rs.find((x) => x.n === shp) || {}).m || 0 : S.lead.reduce((a, x) => a + x[pc], 0);
+  const sk = (x) => (srt[0] === 'sh' ? sv(x) : x[srt[0]]);
+  let r = S.lead.filter((x) => shp ? sv(x) > 0 : x[pc] > 0 || x[cc] > 0 || x[rc] > 0 || per === 'all');
+  if (srt) r = r.slice().sort((a, b) => (sk(a) == null) - (sk(b) == null) || srt[1] * (sk(a) - sk(b)));
+  else r = r.slice().sort((a, b) => shp ? sv(b) - sv(a) || b[pc] - a[pc] : b[pc] - a[pc] || b[3] - a[3]);
+  const shh = `<th class="s n ${srt && srt[0] === 'sh' ? 'on' : ''}" data-s="sh" data-t="${esc(shp ? `Share of all merged PRs in ${ap(shp)[0]}, all time` : `Share of all merged PRs${per === 'all' ? '' : ` in the last ${per === '7d' ? '7' : '30'} days`}`)}">Share</th>`;
+  const mx = Math.max(1, ...r.slice(0, 200).map(sv));
+  const shc = (x) => { const v = sv(x), f = v / mx; return `<td class="n shc"><span class="shv">${pct(v, st)}</span><i class="shb"><i style="width:${Math.min(100, f * 100)}%${shp ? `;background:${col(shp)}` : ''}"></i></i></td>`; };
   const rk = new Map(r.map((x, i) => [x[0], i + 1]));
   if (q) r = r.filter((x) => x[0].toLowerCase().includes(q));
   const lm = full ? lim : 10, sh = r.slice(0, lm);
   const th = (i, t, c = 'n') => `<th class="s ${c} ${srt && srt[0] === i ? 'on' : ''}" data-s="${i}">${t}</th>`;
   const me = ME && ME.l.toLowerCase();
-  if (!full) return `<div class="tw"><table><thead><tr><th class="n">#</th><th>Contributor</th>${th(pc, 'Merged')}${th(cc, 'Commits', 'n hide-s')}${th(rc, 'Reviews', 'n hide-s')}<th class="hide-s">Mostly</th></tr></thead><tbody>
-    ${sh.map((x) => `<tr class="lk ${me === x[0].toLowerCase() ? 'me-row' : ''}" data-u="${esc(x[0])}"><td class="n dim">${rk.get(x[0])}</td><td><span class="who"><img loading="lazy" src="${av(x[0], x[1])}" alt="">${esc(x[0])}${tb(x)}</span></td><td class="n">${nk(`l.${x[0]}.${pc}`, x[pc])}</td><td class="n hide-s dim">${nk(`l.${x[0]}.${cc}`, x[cc])}</td><td class="n hide-s dim">${N(x[rc])}</td><td class="hide-s" style="color:${x[8] ? ink(x[8]) : ''};white-space:nowrap">${x[8] ? esc(ap(x[8])[0]) : '–'}</td></tr>`).join('')}
+  if (!full) return `<div class="tw"><table><thead><tr><th class="n">#</th><th>Contributor</th>${th(pc, 'Merged')}${shh}${th(cc, 'Commits', 'n hide-s')}${th(rc, 'Reviews', 'n hide-s')}<th class="hide-s">Mostly</th></tr></thead><tbody>
+    ${sh.map((x) => `<tr class="lk ${me === x[0].toLowerCase() ? 'me-row' : ''}" data-u="${esc(x[0])}"><td class="n dim">${rk.get(x[0])}</td><td><span class="who"><img loading="lazy" src="${av(x[0], x[1])}" alt="">${esc(x[0])}${tb(x)}</span></td><td class="n">${nk(`l.${x[0]}.${pc}`, x[pc])}</td>${shc(x)}<td class="n hide-s dim">${nk(`l.${x[0]}.${cc}`, x[cc])}</td><td class="n hide-s dim">${N(x[rc])}</td><td class="hide-s" style="color:${x[8] ? ink(x[8]) : ''};white-space:nowrap">${x[8] ? esc(ap(x[8])[0]) : '–'}</td></tr>`).join('')}
     </tbody></table></div><a class="btn more" href="#/people">Full leaderboard</a>`;
-  return `<div class="tw"><table><thead><tr><th class="n">#</th><th>Contributor</th>${th(pc, 'Merged')}${th(cc, 'Commits', 'n hide-s')}${th(rc, 'Reviews', 'n hide-s')}${th(14, 'Merge rate', 'n hide-s')}${th(15, 'Reverted', 'n hide-s')}${th(7, 'Apps', 'n hide-s')}<th class="hide-s">Mostly</th><th class="hide-s">Built</th>${th(11, 'Median merge', 'n hide-s')}${th(10, 'Last active', 'n hide-s')}</tr></thead><tbody>
+  return `<div class="tw"><table><thead><tr><th class="n">#</th><th>Contributor</th>${th(pc, 'Merged')}${shh}${th(cc, 'Commits', 'n hide-s')}${th(rc, 'Reviews', 'n hide-s')}${th(14, 'Merge rate', 'n hide-s')}${th(15, 'Reverted', 'n hide-s')}${th(7, 'Apps', 'n hide-s')}<th class="hide-s">Mostly</th><th class="hide-s">Built</th>${th(11, 'Median merge', 'n hide-s')}${th(10, 'Last active', 'n hide-s')}</tr></thead><tbody>
     ${sh.map((x) => `<tr class="lk ${me === x[0].toLowerCase() ? 'me-row' : ''}" data-u="${esc(x[0])}"><td class="n dim">${rk.get(x[0])}</td>
     <td><span class="who"><img loading="lazy" src="${av(x[0], x[1])}" alt="">${esc(x[0])}${tb(x)}</span></td>
-    <td class="n">${nk(`l.${x[0]}.${pc}`, x[pc])}</td><td class="n hide-s dim">${nk(`l.${x[0]}.${cc}`, x[cc])}</td><td class="n hide-s dim">${N(x[rc])}</td><td class="n hide-s dim">${pc0(x[14])}</td><td class="n hide-s dim">${N(x[15])}</td><td class="n hide-s dim">${x[7]}</td>
+    <td class="n">${nk(`l.${x[0]}.${pc}`, x[pc])}</td>${shc(x)}<td class="n hide-s dim">${nk(`l.${x[0]}.${cc}`, x[cc])}</td><td class="n hide-s dim">${N(x[rc])}</td><td class="n hide-s dim">${pc0(x[14])}</td><td class="n hide-s dim">${N(x[15])}</td><td class="n hide-s dim">${x[7]}</td>
     <td class="hide-s" style="color:${x[8] ? ink(x[8]) : ''}">${x[8] ? esc(ap(x[8])[0]) : '–'}</td><td class="hide-s">${blt(x[13])}</td><td class="n hide-s dim">${du(x[11])}</td><td class="n hide-s dim">${ago(x[10])}</td></tr>`).join('')}
     </tbody></table></div>${!sh.length ? '<p class="empty">No one matches.</p>' : ''}
     ${full && r.length > lm ? `<button class="btn more" id="more">Show more (${N(r.length - lm)} left)</button>` : ''}
     ${!full ? '<a class="btn more" href="#/people">Full leaderboard</a>' : ''}`;
 }
 function segs() {
-  return `<div class="seg" id="per">${[['all', 'All time'], ['30d', '30 days'], ['7d', '7 days']].map(([k, t]) => `<button data-p="${k}" class="${per === k ? 'on' : ''}">${t}</button>`).join('')}</div>`;
+  const ro = S.rs.filter((x) => x.m > 0).sort((a, b) => b.m - a.m);
+  return `<select class="shp" id="shp" aria-label="Share per app"><option value="">All apps</option>${ro.map((x) => `<option value="${esc(x.n)}" ${shp === x.n ? 'selected' : ''}>${esc(ap(x.n)[0])}</option>`).join('')}</select><div class="seg" id="per">${[['all', 'All time'], ['30d', '30 days'], ['7d', '7 days']].map(([k, t]) => `<button data-p="${k}" class="${per === k ? 'on' : ''}">${t}</button>`).join('')}</div>`;
 }
 
 function feed() {
@@ -332,7 +343,7 @@ function overview() {
   if (ao) at.push(['Other', ao, 'var(--line2)']);
   const P = {}; let DT = 0; for (const x of S.dl || []) { DT += x.t; for (const kk in x.p) P[kk] = (P[kk] || 0) + x.p[kk]; }
   const i = S.is, dc = S.dc;
-  return `<div class="top"><div><h1>Craft App Bundle contributions</h1></div><span class="sub"><i class="lv"></i>Live${S.sync ? `, syncing ${S.sync} repos` : ''}, updated <span id="upd">${sa(S.at)}</span></span></div>
+  return `<div class="top"><div><h1>Craft App Bundle contributions</h1></div>${srcs()}<span class="sub"><i class="lv"></i>Live${S.sync ? `, syncing ${S.sync} repos` : ''}, updated <span id="upd">${sa(S.at)}</span></span></div>
   ${S.err ? `<div class="err">GitHub sync error: ${esc(S.err)}</div>` : ''}
   <div class="kpi">
     <div><span class="lbl">Contributors</span><b>${nk('k.c', k.c)}</b>${dlt(k.n7)}${spark(cum)}</div>
@@ -364,7 +375,7 @@ function overview() {
   </div>`;
 }
 function people() {
-  return `<div class="top"><h1>Leaderboard</h1><span class="sub">${N(S.lead.length)} contributors</span></div>
+  return `<div class="top"><h1>Leaderboard</h1>${srcs()}<span class="sub">${N(S.lead.length)} contributors</span></div>
   <section class="box"><div class="box-h"><input class="srch" id="q" type="search" placeholder="Find a GitHub user" value="${esc(q)}">${segs()}</div><div id="lead">${lead(true)}</div></section>`;
 }
 
@@ -641,6 +652,10 @@ function bind() {
   });
   const per0 = $('#per');
   if (per0) per0.onclick = (e) => { const p = e.target.dataset.p; if (!p) return; per = p; srt = null; lim = 50; per0.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.p === p)); relead(); };
+  const sr = $('#src');
+  if (sr) sr.onclick = async (e) => { const f = e.target.dataset.f; if (!f || f === src) return; src = f; try { localStorage.setItem('src', f); } catch {} sr.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.f === f)); if (await load()) { const y = scrollY; await route(); scrollTo(0, y); } };
+  const sp = $('#shp');
+  if (sp) sp.onchange = () => { shp = sp.value; srt = null; lim = 50; relead(); };
   const qi = $('#q');
   if (qi) qi.oninput = () => { q = qi.value.trim().toLowerCase(); lim = 50; relead(); };
   m.querySelectorAll('tr[data-go]').forEach((r) => r.onclick = (e) => { if (!e.target.closest('a')) location.hash = r.dataset.go; });
@@ -672,7 +687,7 @@ function bind() {
 function bl() {
   const L = $('#lead'); if (!L) return;
   L.querySelectorAll('tr.lk').forEach((r) => r.onclick = () => location.hash = '#/u/' + encodeURIComponent(r.dataset.u));
-  L.querySelectorAll('th.s').forEach((h) => h.onclick = () => { const i = +h.dataset.s; srt = srt && srt[0] === i ? (srt[1] === -1 ? [i, 1] : null) : [i, i === 11 ? 1 : -1]; relead(); });
+  L.querySelectorAll('th.s').forEach((h) => h.onclick = () => { const i = h.dataset.s === 'sh' ? 'sh' : +h.dataset.s; srt = srt && srt[0] === i ? (srt[1] === -1 ? [i, 1] : null) : [i, i === 11 ? 1 : -1]; relead(); });
   const mo = $('#more'); if (mo) mo.onclick = () => { lim += 100; relead(); };
 }
 function relead() { const L = $('#lead'); if (L) { L.innerHTML = lead(!!$('#q')); bl(); roll(); } }
@@ -696,7 +711,7 @@ async function route() {
 }
 
 async function load() {
-  try { S = await get('/api/stats?v=' + Date.now()); } catch (e) { if (!S) $('#m').innerHTML = `<p class="empty">${e.s === 503 ? 'Syncing with GitHub.' : 'Could not load data.'}</p>`; setTimeout(load, 15000); return false; }
+  try { S = await get(`/api/stats?f=${src}&v=${Date.now()}`); } catch (e) { if (!S) $('#m').innerHTML = `<p class="empty">${e.s === 503 ? 'Syncing with GitHub.' : 'Could not load data.'}</p>`; setTimeout(load, 15000); return false; }
   return true;
 }
 
