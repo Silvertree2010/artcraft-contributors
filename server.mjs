@@ -13,8 +13,8 @@ const rf = (f) => { try { return fs.readFileSync(f, 'utf8').trim(); } catch { re
 const TK = process.env.GH_TOKEN || rf('/run/secrets/gh_token');
 const CI = process.env.OAUTH_ID || rf('/run/secrets/oauth_id');
 const CS = process.env.OAUTH_SECRET || rf('/run/secrets/oauth_secret');
-const DU = (process.env.DCB_URL || '').replace(/\/$/, '');
-const DT = process.env.DCB_TOKEN || rf('/run/secrets/dcb_token');
+const DU = (process.env.DISCORD_URL || rf('/run/secrets/discord_url')).replace(/\/$/, '');
+const DT = process.env.DISCORD_TOKEN || rf('/run/secrets/discord_token');
 fs.mkdirSync(D, { recursive: true });
 
 const kf = path.join(D, 'key');
@@ -300,7 +300,7 @@ async function ci() {
 
 let dbusy = 0;
 async function dpoll() {
-  if (!DT || dbusy) return;
+  if (!DU || !DT || dbusy) return;
   dbusy = 1;
   const X = db.dc, now = Math.round(Date.now() / 1000);
   try {
@@ -310,7 +310,7 @@ async function dpoll() {
     if (ok && !X.on) { X.gp[X.gp.length - 1][1] = now; X.on = 1; dirty = 1; }
     for (let i = 0; i < 20; i++) {
       const r = await fetch(`${DU}/statistik?seit=${X.z}`, { headers: { Authorization: 'Bearer ' + DT }, signal: AbortSignal.timeout(20000) });
-      if (!r.ok) throw new Error('dcb ' + r.status);
+      if (!r.ok) throw new Error('discord ' + r.status);
       const j = await r.json();
       const zs = new Set(X.zi);
       for (const [id, , ch, hs, z] of j) {
