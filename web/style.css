@@ -103,7 +103,7 @@ h1 .tm { margin-left: 12px; vertical-align: middle; font-size: 11px; }
 .up { color: var(--accent-ink); }
 .lv { display: inline-block; width: 7px; height: 7px; background: var(--good); margin-right: 7px; vertical-align: 1px; }
 #upd { font-variant-numeric: tabular-nums; }
-.me-row td { box-shadow: inset 3px 0 0 var(--accent); }
+.me-row td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 .app { display: flex; align-items: center; gap: 10px; font-weight: 500; }
 .app img { width: 22px; height: 22px; }
 .bar { height: 6px; background: var(--sunken); min-width: 60px; }
@@ -242,3 +242,5 @@ td.shc { white-space: nowrap; }
 .ft-in { max-width: 1240px; margin: 0 auto; padding: 18px 24px 28px; display: flex; gap: 24px; flex-wrap: wrap; justify-content: space-between; color: var(--muted); font-size: 12.5px; }
 .ft a { color: var(--muted); text-decoration: underline; text-underline-offset: 2px; }
 .ft a:hover { color: var(--strong); }
+#lead th, #lead td { padding-left: 7px; padding-right: 7px; }
+#lead .shb { width: 36px; }
