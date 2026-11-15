@@ -45,9 +45,14 @@ const okr = (r) => !r.archived && !/^placeholder-/i.test(r.name) && /craft/i.tes
 
 const ow = (n) => (db.r.find((r) => r.n === n) || {}).o || O;
 async function comm() {
-  const f = await gh('/repos/storytold/craft-launcher/contents/crates/core/src/catalog.rs');
+  // Launcher catalog moved from catalog.rs to catalog.toml (one [[apps]] table per app).
+  const f = await gh('/repos/storytold/craft-launcher/contents/crates/core/catalog.toml');
   const t = Buffer.from(f.content, 'base64').toString('utf8');
-  const cs = [...t.matchAll(/kind:\s*AppKind::Community[\s\S]*?"([A-Za-z0-9-]+)\/([A-Za-z0-9._-]+)"/g)].map((m) => [m[1], m[2]]).filter(([o]) => o.toLowerCase() !== O);
+  const cs = t.split(/^\[\[apps\]\]\s*$/m).slice(1).map((b) => b.split(/^\[apps\./m)[0])
+    .filter((b) => /^kind\s*=\s*"community"/m.test(b))
+    .map((b) => b.match(/^repo\s*=\s*"([A-Za-z0-9-]+)\/([A-Za-z0-9._-]+)"/m)).filter(Boolean)
+    .map((m) => [m[1], m[2]]).filter(([o]) => o.toLowerCase() !== O);
+  if (!cs.length) throw new Error('no community apps in catalog.toml');
   const out = [];
   for (const [o, n] of cs) { try { out.push(await gh(`/repos/${o}/${n}`)); } catch (e) { console.error('[comm]', o, n, e.message); } }
   return out;
@@ -693,7 +698,7 @@ function feedx(s) {
   s.end(x);
 }
 const tw = (t) => Math.round([...t].reduce((a, c) => a + (/[il.,:'|!]/.test(c) ? 3.2 : /[mwMW]/.test(c) ? 9.5 : /[A-Z0-9#]/.test(c) ? 7.2 : 6.1), 0)) + 10;
-const CL = { photocraft: '#2f7bf5', vectorcraft: '#e8573f', filmcraft: '#8b5cf6', lightcraft: '#f2a516', pdfcraft: '#12a58a', effectcraft: '#e0368f', designcraft: '#7bb51c', figcraft: '#02da96', wordcraft: '#3f5fe0', soundcraft: '#1fa5c9', deckcraft: '#f07a1e', cadcraft: '#3ea6e8', gridcraft: '#1f9d55', solidcraft: '#46a1fb', artcraft: '#4e7bfb', anicraft: '#c25bd6' };
+const CL = { photocraft: '#2f7bf5', vectorcraft: '#e8573f', filmcraft: '#8b5cf6', lightcraft: '#f2a516', pdfcraft: '#12a58a', effectcraft: '#e0368f', designcraft: '#7bb51c', figcraft: '#02da96', wordcraft: '#3f5fe0', soundcraft: '#1fa5c9', deckcraft: '#f07a1e', cadcraft: '#3ea6e8', gridcraft: '#1f9d55', solidcraft: '#46a1fb', mailcraft: '#0f68f0', artcraft: '#4e7bfb', anicraft: '#c25bd6' };
 const BS = { dark: ['#101014', '#2d81ff', '#fff', '#fff'], light: ['#e9e8e4', '#101014', '#101014', '#fff'], blue: ['#1659c4', '#2d81ff', '#fff', '#fff'], mono: ['#101014', '#3a3a40', '#fff', '#fff'] };
 const kfm = (v) => v >= 1e6 ? (v / 1e6).toFixed(1) + 'M' : v >= 1e4 ? Math.round(v / 1e3) + 'k' : nfm.format(v);
 function ustrk(l) {

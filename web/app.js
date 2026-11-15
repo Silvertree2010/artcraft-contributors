@@ -6,7 +6,7 @@ const AP = {
   designcraft: ['DesignCraft', '#7bb51c', '#457008', '#a6e04a'], figcraft: ['FigCraft', '#02da96', '#047a56', '#4fe8b6'],
   wordcraft: ['WordCraft', '#3f5fe0', '#2a44b8', '#8ea2ff'], soundcraft: ['SoundCraft', '#1fa5c9', '#0e7290', '#5fd0ee'],
   deckcraft: ['DeckCraft', '#f07a1e', '#a84f0a', '#ffa060'], cadcraft: ['CADCraft', '#3ea6e8', '#1a6fa8', '#7cc8ff'],
-  gridcraft: ['GridCraft', '#1f9d55', '#12703a', '#4fd68a'], texturecraft: ['TextureCraft', '#c2672b', '#9c4a15', '#e58a4e'], 'craft-anything': ['Craft Anything', '#4e7bfb', '#1659c4', '#74aaff'], solidcraft: ['SolidCraft', '#46a1fb', '#1653ae', '#8cc4ff'], artcraft: ['ArtCraft', '#4e7bfb', '#2a52c4', '#8aa8ff'],
+  gridcraft: ['GridCraft', '#1f9d55', '#12703a', '#4fd68a'], texturecraft: ['TextureCraft', '#c2672b', '#9c4a15', '#e58a4e'], 'craft-anything': ['Craft Anything', '#4e7bfb', '#1659c4', '#74aaff'], solidcraft: ['SolidCraft', '#46a1fb', '#1653ae', '#8cc4ff'], mailcraft: ['MailCraft', '#0f68f0', '#0634c4', '#8fbfff'], artcraft: ['ArtCraft', '#4e7bfb', '#2a52c4', '#8aa8ff'],
   'craft-launcher': ['Launcher', '#8a8a90', '#55555c', '#b5b5bb'], anicraft: ['AniCraft', '#c25bd6', '#8e2fa3', '#e29af0'],
 };
 const NEU = ['#9a958c', '#6b665e', '#c2bdb4'];
