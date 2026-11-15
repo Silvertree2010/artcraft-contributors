@@ -10,12 +10,14 @@ const AP = {
   'craft-launcher': ['Launcher', '#8a8a90', '#55555c', '#b5b5bb'], anicraft: ['AniCraft', '#c25bd6', '#8e2fa3', '#e29af0'],
 };
 const NEU = ['#9a958c', '#6b665e', '#c2bdb4'];
-const ORD = Object.keys(AP);
+let ORD = Object.keys(AP);
+// Names, colors and icons for every app come from the launcher catalog (S.ap), AP is only the fallback.
+const apm = () => { if (S && S.ap) { Object.assign(AP, S.ap); ORD = Object.keys(AP); } };
 const dk = matchMedia('(prefers-color-scheme: dark)');
 const ap = (n) => AP[n.toLowerCase()] || [n, ...NEU];
 const col = (n) => ap(n)[1];
 const ink = (n) => ap(n)[dk.matches ? 3 : 2];
-const ico = (n) => AP[n.toLowerCase()] && !/^(artcraft|craft-launcher|anicraft)$/.test(n.toLowerCase()) ? `icons/${n.toLowerCase()}.png` : 'icons/artcraft-launcher.svg';
+const ico = (n) => (S && S.ap && S.ap[n.toLowerCase()]) || AP[n.toLowerCase()] && !/^(artcraft|craft-launcher|anicraft)$/.test(n.toLowerCase()) ? `icons/${n.toLowerCase()}.png` : 'icons/artcraft-launcher.svg';
 const gu = (n) => `https://github.com/${encodeURIComponent((S && S.rs.find((x) => x.n === n) || {}).w || 'storytold')}/${encodeURIComponent(n)}`;
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -363,7 +365,7 @@ function overview() {
     <section class="box"><div class="box-h"><h2>Leaderboard</h2>${segs()}</div><div id="lead">${lead(false)}</div></section>
     <section class="box"><div class="box-h"><h2>Latest merges</h2></div>${feed()}</section>
   </div>
-  <section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Apps</h2><div class="seg" id="tmk">${[['cm', 'Commits'], ['m', 'Merged'], ['dl', 'Downloads'], ['s', 'Stars']].map(([kk, t]) => `<button data-k="${kk}" class="${tmk === kk ? 'on' : ''}">${t}</button>`).join('')}</div></div><div id="tmap">${tmap()}</div></section>
+  <section class="box" style="margin-bottom:24px"><div class="box-h"><h2>Apps</h2><div class="seg" id="tmk">${[['cm', 'Commits'], ['m', 'Merged'], ['dl', 'Downloads'], ['s', 'Stars']].map(([kk, t]) => `<button data-t="${kk}" class="${tmk === kk ? 'on' : ''}">${t}</button>`).join('')}</div></div><div id="tmap">${tmap()}</div></section>
   <div class="grid g3">
     <section class="box"><div class="box-h"><h2>Contributors</h2></div>${growth()}</section>
     <section class="box"><div class="box-h"><h2>Time to merge</h2><span class="sub">Median ${du(k.t)}</span></div>${hist()}</section>
@@ -664,7 +666,7 @@ function bind() {
     el.onclick = (e) => { const b = e.target.closest('button[data-m],button[data-s]'); if (!b) return; const g = b.dataset.m != null ? 'm' : 's'; el.dataset[g] = b.dataset[g]; b.parentNode.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b)); bdset(el); };
   });
   const tk = $('#tmk');
-  if (tk) tk.onclick = (e) => { const kk = e.target.dataset.k; if (!kk) return; tmk = kk; tk.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.k === kk)); $('#tmap').innerHTML = tmap(); };
+  if (tk) tk.onclick = (e) => { const kk = e.target.dataset.t; if (!kk) return; tmk = kk; tk.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.t === kk)); $('#tmap').innerHTML = tmap(); };
   const vs = $('#vs');
   if (vs) {
     const qi2 = $('#vsq'), ul = $('#vsl'), go = (v) => { if (v) location.hash = `#/vs/${encodeURIComponent(vs.dataset.a)}/${encodeURIComponent(v)}`; };
@@ -711,7 +713,7 @@ async function route() {
 }
 
 async function load() {
-  try { S = await get(`/api/stats?f=${src}&v=${Date.now()}`); } catch (e) { if (!S) $('#m').innerHTML = `<p class="empty">${e.s === 503 ? 'Syncing with GitHub.' : 'Could not load data.'}</p>`; setTimeout(load, 15000); return false; }
+  try { S = await get(`/api/stats?f=${src}&v=${Date.now()}`); apm(); } catch (e) { if (!S) $('#m').innerHTML = `<p class="empty">${e.s === 503 ? 'Syncing with GitHub.' : 'Could not load data.'}</p>`; setTimeout(load, 15000); return false; }
   return true;
 }
 

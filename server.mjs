@@ -44,17 +44,37 @@ const sec = (t) => (t ? Math.round(Date.parse(t) / 1000) : 0);
 const okr = (r) => !r.archived && !/^placeholder-/i.test(r.name) && /craft/i.test(r.name);
 
 const ow = (n) => (db.r.find((r) => r.n === n) || {}).o || O;
+// Launcher catalog (crates/core/catalog.toml, one [[apps]] table per app) is the source of
+// truth for app names, colors and icons, so new Craft apps show up without manual entries.
+const hx = (v) => v && '#' + v.match(/\d+/g).slice(0, 3).map((x) => (+x).toString(16).padStart(2, '0')).join('');
+const ID = path.join(D, 'icons');
+fs.mkdirSync(ID, { recursive: true });
+async function ico(k, u, h) {
+  const f = path.join(ID, k + '.png');
+  if (fs.existsSync(f) && (!h || crypto.createHash('sha256').update(fs.readFileSync(f)).digest('hex') === h)) return;
+  if (!/^https:\/\/getartcraft\.com\//.test(u)) return;
+  const r = await fetch(u, { signal: AbortSignal.timeout(25000) });
+  if (!r.ok) throw new Error('icon ' + r.status);
+  const b = Buffer.from(await r.arrayBuffer());
+  if (b.length > 2e6 || b.subarray(1, 4).toString() !== 'PNG') throw new Error('icon not png');
+  if (h && crypto.createHash('sha256').update(b).digest('hex') !== h) throw new Error('icon sha mismatch');
+  fs.writeFileSync(f + '.tmp', b); fs.renameSync(f + '.tmp', f);
+}
 async function comm() {
-  // Launcher catalog moved from catalog.rs to catalog.toml (one [[apps]] table per app).
   const f = await gh('/repos/storytold/craft-launcher/contents/crates/core/catalog.toml');
   const t = Buffer.from(f.content, 'base64').toString('utf8');
-  const cs = t.split(/^\[\[apps\]\]\s*$/m).slice(1).map((b) => b.split(/^\[apps\./m)[0])
-    .filter((b) => /^kind\s*=\s*"community"/m.test(b))
-    .map((b) => b.match(/^repo\s*=\s*"([A-Za-z0-9-]+)\/([A-Za-z0-9._-]+)"/m)).filter(Boolean)
-    .map((m) => [m[1], m[2]]).filter(([o]) => o.toLowerCase() !== O);
-  if (!cs.length) throw new Error('no community apps in catalog.toml');
+  const g = (b, k) => (b.match(new RegExp(`^${k}\\s*=\\s*(.+)$`, 'm')) || [])[1];
+  const st = (v) => v && v.trim().replace(/^"|"$/g, '');
+  const ap = t.split(/^\[\[apps\]\]\s*$/m).slice(1).map((b) => b.split(/^\[apps\./m)[0]).map((b) => {
+    const rp = (st(g(b, 'repo')) || '').match(/^([A-Za-z0-9-]+)\/([A-Za-z0-9._-]+)$/);
+    return rp && { o: rp[1], r: rp[2], k: rp[2].toLowerCase(), n: st(g(b, 'name')) || rp[2], c: hx(g(b, 'color')), l: hx(g(b, 'ink_light')), d: hx(g(b, 'ink_dark')), u: st(g(b, 'icon_url')), h: st(g(b, 'icon_sha256')), cm: st(g(b, 'kind')) === 'community' };
+  }).filter((a) => a && a.c);
+  if (!ap.length) throw new Error('no apps in catalog.toml');
+  db.cat = Object.fromEntries(ap.map((a) => [a.k, [a.n, a.c, a.l || a.c, a.d || a.c]]));
+  cat();
+  for (const a of ap) if (a.u) await ico(a.k, a.u, a.h).catch((e) => console.error('[icon]', a.k, e.message));
   const out = [];
-  for (const [o, n] of cs) { try { out.push(await gh(`/repos/${o}/${n}`)); } catch (e) { console.error('[comm]', o, n, e.message); } }
+  for (const a of ap.filter((a) => a.cm && a.o.toLowerCase() !== O)) { try { out.push(await gh(`/repos/${a.o}/${a.r}`)); } catch (e) { console.error('[comm]', a.o, a.r, e.message); } }
   return out;
 }
 async function repos() {
@@ -544,7 +564,7 @@ function bd(fk) {
     dd: Object.entries(dpd).map(([d, v]) => [+d, v]).sort((a, b) => a[0] - b[0]).slice(-120),
     rvl: rvl.slice(0, 50), dc,
     rs: rp.map((r) => ({ n: r.n, m: r.m, o: r.o, op: r.op, c: r.c.size, t: med(r.t), cm: r.cm, b: r.b, q: (db.q || {})[r.n] || null, s: (RR.find((x) => x.n === r.n) || {}).s || 0, f: (RR.find((x) => x.n === r.n) || {}).f || 0, w: ow(r.n), x: rc.has(r.n) ? 1 : 0, ci: db.ci[r.n] ? { n: db.ci[r.n].n, ok: db.ci[r.n].ok, med: db.ci[r.n].med, last: db.ci[r.n].last } : null, is: irs[r.n] || null, fr: med(rvr[r.n] || []), dl: db.dl[r.n] ? db.dl[r.n].t : 0 })),
-    v: ver, pre, days: days.map((d) => [d.d, d.o, d.x, d.m, d.a.size, d.n, d.c, d.r]), weeks, heat, hist, lead, team, recent: all.slice(0, 40), dl: dla,
+    ap: db.cat || {}, v: ver, pre, days: days.map((d) => [d.d, d.o, d.x, d.m, d.a.size, d.n, d.c, d.r]), weeks, heat, hist, lead, team, recent: all.slice(0, 40), dl: dla,
   };
   const idx = new Map();
   for (const rn of rs) for (const [nr, v] of Object.entries(db.p[rn] || {})) {
@@ -686,7 +706,7 @@ open: d.o.nodes.filter((n) => n.number).map((n) => {
 }
 
 const xe = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c]));
-const AN = (n) => ({ 'craft-launcher': 'Launcher', cadcraft: 'CADCraft', pdfcraft: 'PdfCraft', anicraft: 'AniCraft', texturecraft: 'TextureCraft', 'craft-anything': 'Craft Anything' }[n.toLowerCase()] || n.replace(/^(\w)(\w*?)craft/i, (_, a, b) => a.toUpperCase() + b + 'Craft'));
+const AN = (n) => (db.cat && db.cat[n.toLowerCase()] || [])[0] || ({ 'craft-launcher': 'Launcher', cadcraft: 'CADCraft', pdfcraft: 'PdfCraft', anicraft: 'AniCraft', texturecraft: 'TextureCraft', 'craft-anything': 'Craft Anything' }[n.toLowerCase()] || n.replace(/^(\w)(\w*?)craft/i, (_, a, b) => a.toUpperCase() + b + 'Craft'));
 const nfm = new Intl.NumberFormat('en-US');
 function feedx(s) {
   const it = [
@@ -699,6 +719,8 @@ function feedx(s) {
 }
 const tw = (t) => Math.round([...t].reduce((a, c) => a + (/[il.,:'|!]/.test(c) ? 3.2 : /[mwMW]/.test(c) ? 9.5 : /[A-Z0-9#]/.test(c) ? 7.2 : 6.1), 0)) + 10;
 const CL = { photocraft: '#2f7bf5', vectorcraft: '#e8573f', filmcraft: '#8b5cf6', lightcraft: '#f2a516', pdfcraft: '#12a58a', effectcraft: '#e0368f', designcraft: '#7bb51c', figcraft: '#02da96', wordcraft: '#3f5fe0', soundcraft: '#1fa5c9', deckcraft: '#f07a1e', cadcraft: '#3ea6e8', gridcraft: '#1f9d55', solidcraft: '#46a1fb', mailcraft: '#0f68f0', artcraft: '#4e7bfb', anicraft: '#c25bd6' };
+function cat() { for (const [k, v] of Object.entries(db.cat || {})) CL[k] = v[1]; }
+cat();
 const BS = { dark: ['#101014', '#2d81ff', '#fff', '#fff'], light: ['#e9e8e4', '#101014', '#101014', '#fff'], blue: ['#1659c4', '#2d81ff', '#fff', '#fff'], mono: ['#101014', '#3a3a40', '#fff', '#fff'] };
 const kfm = (v) => v >= 1e6 ? (v / 1e6).toFixed(1) + 'M' : v >= 1e4 ? Math.round(v / 1e3) + 'k' : nfm.format(v);
 function ustrk(l) {
@@ -752,7 +774,7 @@ function ogh(p) {
   const [, k, a, b] = p.split('/').map((x) => decodeURIComponent(x || ''));
   let t = null, d = null, im = `${B}/icons/og.png`;
   if (k === 'u' && a && S) { const i = S.lead.findIndex((r) => r[0].toLowerCase() === a.toLowerCase()); if (i >= 0) { const r = S.lead[i]; t = `${r[0]} on ArtCraft Contributors`; d = `Rank ${i + 1} of ${nfm.format(S.lead.length)}. ${nfm.format(r[2])} merged PRs and ${nfm.format(r[12])} commits across ${r[7]} Craft apps.`; im = `https://avatars.githubusercontent.com/u/${r[1]}?s=400`; } }
-  else if (k === 'app' && a && S) { const r = S.rs.find((x) => x.n.toLowerCase() === a.toLowerCase()); if (r) { t = `${AN(r.n)} contributions`; d = `${nfm.format(r.c)} contributors, ${nfm.format(r.m)} merged PRs, ${nfm.format(r.cm)} commits${r.dl ? `, ${nfm.format(r.dl)} downloads` : ''}.`; if (fs.existsSync(path.join(W, 'icons', r.n.toLowerCase() + '.png'))) im = `${B}/icons/${r.n.toLowerCase()}.png`; } }
+  else if (k === 'app' && a && S) { const r = S.rs.find((x) => x.n.toLowerCase() === a.toLowerCase()); if (r) { t = `${AN(r.n)} contributions`; d = `${nfm.format(r.c)} contributors, ${nfm.format(r.m)} merged PRs, ${nfm.format(r.cm)} commits${r.dl ? `, ${nfm.format(r.dl)} downloads` : ''}.`; if (fs.existsSync(path.join(ID, r.n.toLowerCase() + '.png')) || fs.existsSync(path.join(W, 'icons', r.n.toLowerCase() + '.png'))) im = `${B}/icons/${r.n.toLowerCase()}.png`; } }
   else if (k === 'vs' && a && b) { t = `${a} vs ${b}`; d = 'Side by side on ArtCraft Contributors.'; }
   else if (k === 'releases') { t = 'Craft App Bundle releases'; d = 'Every release across the Craft apps, with downloads.'; }
   else if (k === 'week') { t = 'This week in the Craft apps'; d = 'New contributors, top mergers, reviewers and releases of the last 7 days.'; }
@@ -766,8 +788,9 @@ const MT = { '.xml': 'application/xml', '.html': 'text/html; charset=utf-8', '.j
 const SH = { 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'same-origin', 'Content-Security-Policy': "default-src 'self'; img-src 'self' https://avatars.githubusercontent.com; style-src 'self'; style-src-attr 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'" };
 
 function file(q, s, p) {
-  const f = path.join(W, path.normalize(p === '/' ? '/index.html' : p));
-  if (!f.startsWith(W + path.sep)) return no(s);
+  const ci = p.match(/^\/icons\/([a-z0-9._-]+\.png)$/), cf = ci && path.join(ID, ci[1]);
+  const f = cf && fs.existsSync(cf) ? cf : path.join(W, path.normalize(p === '/' ? '/index.html' : p));
+  if (f !== cf && !f.startsWith(W + path.sep)) return no(s);
   fs.readFile(f, (e, b) => {
     if (e) { if (!path.extname(p)) return file(q, s, '/'); return no(s); }
     const x = path.extname(f), im = /\.(woff2|png|svg)$/.test(x);
