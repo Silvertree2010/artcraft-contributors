@@ -31,7 +31,8 @@ const ts = (x) => Date.parse(x) / 1000;
 const nk = (k, v) => v == null ? '–' : `<span data-k="${esc(k)}" data-v="${v}">${N(v)}</span>`;
 const NV = new Map(), rm = matchMedia('(prefers-reduced-motion: reduce)');
 function roll() {
-  document.querySelectorAll('[data-k]').forEach((el) => {
+  // Only the animated numbers from nk(); other elements (e.g. the README badge widget) also use data-k.
+  document.querySelectorAll('span[data-k][data-v]').forEach((el) => {
     const k = el.dataset.k, v = +el.dataset.v, o = NV.get(k);
     NV.set(k, v);
     if (o == null || o === v || rm.matches) return;
@@ -442,7 +443,7 @@ function bdset(el) {
   const { k, id, m, s: st } = el.dataset, o = location.origin;
   const src = m === 'card' ? `${o}/badge/card/${encodeURIComponent(id)}.svg${st !== 'dark' ? `?s=${st}` : ''}` : `${o}/badge/${k}/${encodeURIComponent(id)}.svg${[m && `m=${m}`, st !== 'dark' && `s=${st}`].filter(Boolean).map((x, i) => (i ? '&' : '?') + x).join('')}`;
   const ln = `${o}/${k === 'u' ? 'u' : 'app'}/${encodeURIComponent(id)}`;
-  el.querySelector('img').src = src;
+  if (el.querySelector('img').src !== src) el.querySelector('img').src = src;
   el.querySelector('[data-cp]').dataset.cp = `[![${k === 'u' ? 'ArtCraft contributions' : ap(id)[0]}](${src})](${ln})`;
   el.querySelector('img').className = m === 'card' ? 'cd' : '';
 }
@@ -694,21 +695,35 @@ function bl() {
 }
 function relead() { const L = $('#lead'); if (L) { L.innerHTML = lead(!!$('#q')); bl(); roll(); } }
 
+// Swap in new page HTML. On a background refresh, keep every top-level block whose HTML didn't change,
+// so images, inputs and widget state stay put and the page doesn't jump.
+function put(m, html, nav) {
+  const t = document.createElement('template'); t.innerHTML = html;
+  const nn = [...t.content.childNodes], ks = nn.map((n) => n.nodeType === 1 ? n.outerHTML : n.nodeValue);
+  const cur = [...m.childNodes], pk = m.__k;
+  if (nav || !pk || pk.length !== ks.length || cur.length !== ks.length || cur.some((n, i) => n !== m.__n[i])) m.replaceChildren(...nn);
+  else ks.forEach((k, i) => { if (k !== pk[i]) m.replaceChild(nn[i], cur[i]); else nn[i] = cur[i]; });
+  m.__k = ks; m.__n = nn;
+}
+
 let seq = 0, lh = null;
 async function route() {
   const id = ++seq, h = location.hash.replace(/^#\/?/, ''), [p, a] = h.split('/');
-  if (h !== lh) { NV.clear(); lh = h; }
+  const nav = h !== lh;
+  if (nav) { NV.clear(); lh = h; }
   hdr();
   const m = $('#m');
+  // Only blank the page when navigating; background refreshes swap content in place so the page doesn't flicker.
+  const wait = () => { if (nav || !m.firstElementChild) m.innerHTML = '<p class="empty">Loading…</p>'; };
   if (p === 'me') { m.innerHTML = '<p class="empty">Loading…</p>'; const x = await mine(); if (id === seq) { m.innerHTML = x; if (ME) fillme(id); } }
   else if (!S) { m.innerHTML = '<p class="empty">Loading…</p>'; return; }
-  else if (p === 'u' && a) { m.innerHTML = '<p class="empty">Loading…</p>'; const x = await user(decodeURIComponent(a)); if (id === seq) m.innerHTML = x; }
-  else if (p === 'people') m.innerHTML = people();
-  else if (p === 'app' && a) { m.innerHTML = '<p class="empty">Loading…</p>'; let x; try { x = apage(await get('/api/app/' + encodeURIComponent(decodeURIComponent(a)))); } catch { x = '<p class="empty">Unknown app.</p>'; } if (id === seq) m.innerHTML = x; }
+  else if (p === 'u' && a) { wait(); const x = await user(decodeURIComponent(a)); if (id === seq) put(m, x, nav); }
+  else if (p === 'people') put(m, people(), nav);
+  else if (p === 'app' && a) { wait(); let x; try { x = apage(await get('/api/app/' + encodeURIComponent(decodeURIComponent(a)))); } catch { x = '<p class="empty">Unknown app.</p>'; } if (id === seq) put(m, x, nav); }
   else if (p === 'releases') { if (!m.querySelector('#rf')) m.innerHTML = '<p class="empty">Loading…</p>'; const x = rpage(await get('/api/releases')); if (id === seq) m.innerHTML = x; }
-  else if (p === 'week') { m.innerHTML = '<p class="empty">Loading…</p>'; const x = wpage(await get('/api/week')); if (id === seq) m.innerHTML = x; }
-  else if (p === 'vs' && a) { m.innerHTML = '<p class="empty">Loading…</p>'; const x = await vs(decodeURIComponent(a), decodeURIComponent(h.split('/')[2] || '')); if (id === seq) m.innerHTML = x; }
-  else m.innerHTML = overview();
+  else if (p === 'week') { wait(); const x = wpage(await get('/api/week')); if (id === seq) put(m, x, nav); }
+  else if (p === 'vs' && a) { wait(); const x = await vs(decodeURIComponent(a), decodeURIComponent(h.split('/')[2] || '')); if (id === seq) put(m, x, nav); }
+  else put(m, overview(), nav);
   if (id === seq) { bind(); roll(); if (!a && p !== 'releases') scrollTo(0, 0); }
 }
 
